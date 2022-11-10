@@ -278,7 +278,7 @@ class hexPosition (object):
                     flipped_board[i][j] = 2
                 if self.board[self.size-1-j][self.size-1-i] == 2:
                     flipped_board[i][j] = 1
-        #return flipped_board
+        
     
         names = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         indent = 0
@@ -309,6 +309,7 @@ class hexPosition (object):
             indent += 2
         headings = " "*(indent-2)+headings
         print(headings)
+        return flipped_board
         
     def recodeCoordinates (self, coordinates):
         """
