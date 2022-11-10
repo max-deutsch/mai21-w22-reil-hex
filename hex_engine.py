@@ -70,7 +70,7 @@ class hexPosition (object):
         
         return [pair for pair in [u,d,r,l,ur,dl] if max(pair[0], pair[1]) <= self.size-1 and min(pair[0], pair[1]) >= 0]
 
-    def getActionSpace (self):
+    def getActionSpace (self, recodeBlackAsWhite=False):
         """
         This method returns a list of array positions which are empty (on which stones may be put).
         """
@@ -80,20 +80,10 @@ class hexPosition (object):
             for j in range(self.size):
                 if self.board[i][j] == 0:
                     actions.append((i,j))
-        return(actions)
-    
-    def getStateVector (self, inverted=False):
-        """
-        This convenience function returns the state of the board as a vector. This vector is the flattening of the board array. (Why does the Python standard library not inlude a flatten method?) If inverted=True then 'white' and 'black' are exchanged in the vector (this makes training RL algorithms more convenient).
-        """
-        from functools import reduce
-        
-        state_vector = list(reduce(lambda a,b: a+b, self.board))
-        
-        if inverted:
-            return [2 if x==1 else (1 if x==2 else 0) for x in state_vector]
-
-        return state_vector
+        if recodeBlackAsWhite:
+            return [self.recodeCoordinates(action) for action in actions]
+        else:
+            return(actions)
     
     def playRandom (self, player):
         """
@@ -275,28 +265,83 @@ class hexPosition (object):
                     print("The computer (Black) has won!")
                     self.blackWin(verbose=True)
                     
-    def getInvertedBoard (self):
+    def recodeBlackAsWhite (self, printBoard=False, invert_colors=True):
         """
-        Convenience function that returns an array of the board but exchanges 'black' and 'white'. Does not modify the object.
+        Returns a board where black is recoded as white and wants to connect horizontally. This corresponds to flipping the board long the south-west to north-east diagonal.
         """
+        flipped_board = [[0 for i in range(self.size)] for i in range(self.size)]
+              
+        #flipping and color change
+        for i in range(self.size):
+            for j in range(self.size):
+                if self.board[self.size-1-j][self.size-1-i] == 1:
+                    flipped_board[i][j] = 2
+                if self.board[self.size-1-j][self.size-1-i] == 2:
+                    flipped_board[i][j] = 1
+        #return flipped_board
+    
+        names = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        indent = 0
+        headings = " "*5+(" "*3).join(names[:self.size])
+        print(headings)
+        tops = " "*5+(" "*3).join("_"*self.size)
+        print(tops)
+        roof = " "*4+"/ \\"+"_/ \\"*(self.size-1)
+        print(roof)
         
-        def inverter (x):
-            if x==1:
-                return 2
-            if x==2:
-                return 1
-            return 0
-                
-        return list(map(lambda y: [inverter(x) for x in y], self.board))
+        #Attention: Color mapping inverted by default for display in terminal.
+        if invert_colors:
+            color_mapping = lambda i: " " if i==0 else ("\u25CB" if i==2 else "\u25CF")
+        else:
+            color_mapping = lambda i: " " if i==0 else ("\u25CF" if i==2 else "\u25CB")
+        
+        for r in range(self.size):
+            row_mid = " "*indent
+            row_mid += "   | "
+            row_mid += " | ".join(map(color_mapping,flipped_board[r]))
+            row_mid += " | {} ".format(r+1)
+            print(row_mid)
+            row_bottom = " "*indent
+            row_bottom += " "*3+" \\_/"*self.size
+            if r<self.size-1:
+                row_bottom += " \\"
+            print(row_bottom)
+            indent += 2
+        headings = " "*(indent-2)+headings
+        print(headings)
+        
+    def recodeCoordinates (self, coordinates):
+        """
+        Transforms a coordinate tuple (with respect to the board) analogously to the method recodeBlackAsWhite.
+        """
+        return (self.size-1-coordinates[1], self.size-1-coordinates[0])
+    
+    def coordinate2scalar (self, coordinates):
+        """
+        Helper function to convert coordinates to scalars.
+        """
+        return coordinates[0]*self.size + coordinates[1]
+    
+    def scalar2coordinates (self, scalar):
+        """
+        Helper function to transform a scalar "back" to coordinates.
+        """
+        temp = int(scalar/self.size)
+        return (temp, scalar-temp*self.size)
 
 
 # #Initializing an object
-# myboard = hexPosition(size=7)
+# myboard = hexPosition(size=4)
 # #Display the board in standard output
 # myboard.printBoard()
 # #Random playthrough
 # myboard.randomMatch(evaluate_when_full=False)
 # myboard.printBoard()
+# myboard.blackWin(verbose=True)
+# myboard.whiteWin(verbose=True)
+
+# myboard.recodeBlackAsWhite(printBoard=True)
+
 # #check whether Black has won
 # myboard.blackWin(verbose=True)
 # #check whether White has won
