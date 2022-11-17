@@ -4,12 +4,8 @@ class hexPosition (object):
     """
    
     def __init__ (self, size=5):
-        
-        if size > 9:
-            print("Warning: Large board size, position evaluation may be slow.")
-        
         self.size = max(2,min(size,26))
-               
+        
         self.board = [[0 for x in range(max(2,min(size,26)))] for y in range(max(2,min(size,26)))]
         self.winner = 0
                 
@@ -105,46 +101,47 @@ class hexPosition (object):
             for i in range(self.size**2):
                 self.playRandom(player)
                 if (player==1):
+                    player = 2
+                else:
+                    player = 1
+            self.whiteWin()
+            self.blackWin()
+        
+        else:
+            while self.winner == 0:
+                self.playRandom(player)
+                if (player==1):
                     self.whiteWin()
                     player = 2
                 else:
                     self.blackWin()
                     player = 1
-            self.whiteWin()
-            self.blackWin()
-        
-        while self.winner == 0:
-            self.playRandom(player)
-            if (player==1):
-                self.whiteWin()
-                player = 2
-            else:
-                self.blackWin()
-                player = 1
                 
     def prolongPath (self, path):
         """
         A helper function used for board evaluation.
         """
-        
-        from copy import deepcopy
-        
+       
         player = self.board[path[-1][0]][path[-1][1]]
         candidates = self.getAdjacent(path[-1])
-        candidates = list(filter(lambda cand: cand not in path, candidates))
-        candidates = list(filter(lambda cand: self.board[cand[0]][cand[1]] == player, candidates))
-                
-        return [deepcopy(path)+[cand] for cand in candidates]
+        
+        #preclude loops
+        candidates = [cand for cand in candidates if cand not in path]
+        candidates = [cand for cand in candidates if self.board[cand[0]][cand[1]] == player]
+        
+        return [path+[cand] for cand in candidates]
     
     def whiteWin (self, verbose=False):
         """
         Evaluate whether the board position is a win for 'white'. Uses breadth first search. If verbose=True a winning path will be printed to the standard output (if one exists). This method may be time-consuming, especially for larger board sizes.
         """
-        
+                
         paths = []
+        visited = []
         for i in range(self.size):
             if self.board[i][0] == 1:
                 paths.append([(i,0)])
+                visited.append([(i,0)])
                 
         while True:
             
@@ -152,7 +149,6 @@ class hexPosition (object):
                 return False
                                     
             for path in paths:
-                
                 prolongations = self.prolongPath(path)
                 paths.remove(path)
                 
@@ -162,17 +158,22 @@ class hexPosition (object):
                             print("A winning path for White:\n",new)
                         self.winner = 1
                         return True
-                    paths.append(new)
+                    
+                    if new[-1] not in visited:
+                        paths.append(new)
+                        visited.append(new[-1])
     
     def blackWin (self, verbose=False):
         """
         Evaluate whether the board position is a win for 'black'. Uses breadth first search. If verbose=True a winning path will be printed to the standard output (if one exists). This method may be time-consuming, especially for larger board sizes.
         """
-        
+                
         paths = []
+        visited = []
         for i in range(self.size):
             if self.board[0][i] == 2:
                 paths.append([(0,i)])
+                visited.append([(0,i)])
                 
         while True:
             
@@ -180,7 +181,6 @@ class hexPosition (object):
                 return False
                                     
             for path in paths:
-                
                 prolongations = self.prolongPath(path)
                 paths.remove(path)
                 
@@ -190,7 +190,10 @@ class hexPosition (object):
                             print("A winning path for Black:\n",new)
                         self.winner = 2
                         return True
-                    paths.append(new)
+                    
+                    if new[-1] not in visited:
+                        paths.append(new)
+                        visited.append(new[-1])
     
     def humanVersusMachine (self, human_player=1, machine=None):
         """
@@ -278,7 +281,7 @@ class hexPosition (object):
                     flipped_board[i][j] = 2
                 if self.board[self.size-1-j][self.size-1-i] == 2:
                     flipped_board[i][j] = 1
-        
+        #return flipped_board
     
         names = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         indent = 0
@@ -309,7 +312,6 @@ class hexPosition (object):
             indent += 2
         headings = " "*(indent-2)+headings
         print(headings)
-        return flipped_board
         
     def recodeCoordinates (self, coordinates):
         """
@@ -332,7 +334,7 @@ class hexPosition (object):
 
 
 # #Initializing an object
-# myboard = hexPosition(size=4)
+# myboard = hexPosition(size=7)
 # #Display the board in standard output
 # myboard.printBoard()
 # #Random playthrough
