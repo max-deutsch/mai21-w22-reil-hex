@@ -6,6 +6,7 @@ Created on Thu Nov 10 15:50:06 2022
 """
 
 from hex_engine import hexPosition
+import math
 
 class Node:
 
@@ -26,12 +27,13 @@ class Node:
 
     def __init__(self):
         self.parent = None
-        self.children = {}
+        self.actionSpace #2d array of empty spots
+        self.children = [] #nodes
         self.action = None # The action taken to end up in this node e.g. (1,2)
         self.visitCount = 0  # is needed for n(s,a)
         self.accumulatedValue = 0 # is needed for w(s,a)
 
-        # self.state = None
+        #self.state = None
 
         # self.value = 0
 
@@ -43,7 +45,7 @@ class Node:
         return len(self.children) > 0
     
     def Expand(self):
-        #insert all valid actions fron that state into list of children
+        #insert all valid actions from that state into list of children
         pass
 
     def determineActionWithUCT(self):
@@ -60,14 +62,17 @@ class MCTS:
         
         #create tree with initial state
         root = Node()
-        
+        root.children = initialState.getActionSpace()        
         for i in range(num_iterations):
             node = root
             
             #SELECTION
             while node.isExpanded():
-                #select a child and
-
+                #select a child according to policy
+                #slide 74
+                list([ x.accumulatedValue/x.visitCount + math.sqrt(2)*() for x in node.children ])               
+                
+                
                 # Determine a by UCT
 
                 pass
@@ -75,6 +80,9 @@ class MCTS:
             #invert Board?
             
             #EXPANSION
+            #Get all possible actions for that leaf node and initialize them as children with visitcount 0
+            newPossibleActions = node.state.getActionSpace()
+            
             
             #SIMULATION
             
