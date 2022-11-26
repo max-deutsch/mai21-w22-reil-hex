@@ -47,7 +47,7 @@ class Node:
         #insert all valid actions from that state into list of children
         for action in self.actionSpace:
             newState = copy(self.state)
-            newState[action[0]][action[1]] = 1 
+            newState[action[0]][action[1]] = self.player 
             self.chilren.append(Node(newState))
         pass
 
