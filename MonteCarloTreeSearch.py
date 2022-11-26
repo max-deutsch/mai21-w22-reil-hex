@@ -7,6 +7,7 @@ Created on Thu Nov 10 15:50:06 2022
 
 from hex_engine import hexPosition
 import math
+import copy
 
 class Node:
 
@@ -25,20 +26,18 @@ class Node:
 
     # TODO: invalid actions filtering
 
-    def __init__(self):
-        self.parent = None
-        self.actionSpace #2d array of empty spots
-        self.children = [] #nodes
-        self.action = None # The action taken to end up in this node e.g. (1,2)
-        self.visitCount = 0  # is needed for n(s,a)
-        self.accumulatedValue = 0 # is needed for w(s,a)
+    def __init__(self,state,player):
+        
+        self.state                  #board state (array)
+        self.actionSpace            #list of empty spots (x,y)
+        
+        self.visitCount = 0         # is needed for n(s,a)
+        self.accumulatedValue = 0   # is needed for w(s,a)
 
-        #self.state = None
-
-        # self.value = 0
-
-
-        # self.outcome # Only for leaf nodes. Storing the outcome of the game
+        self.parent = None          #for backpropagation
+        self.children = []          #nodes
+        
+        self.player = player        #who's turn is it
 
         
     def isExpanded(self):
@@ -46,6 +45,10 @@ class Node:
     
     def Expand(self):
         #insert all valid actions from that state into list of children
+        for action in self.actionSpace:
+            newState = copy(self.state)
+            newState[action[0]][action[1]] = 1 
+            self.chilren.append(Node(newState))
         pass
 
     def determineActionWithUCT(self):
@@ -65,17 +68,7 @@ class MCTS:
         root.children = initialState.getActionSpace()        
         for i in range(num_iterations):
             node = root
-            
-            #SELECTION
-            while node.isExpanded():
-                #select a child according to policy
-                #slide 74
-                list([ x.accumulatedValue/x.visitCount + math.sqrt(2)*() for x in node.children ])               
-                
-                
-                # Determine a by UCT
-
-                pass
+            self.selection(root)
                 
             #invert Board?
             
@@ -87,3 +80,23 @@ class MCTS:
             #SIMULATION
             
             #BACKUP
+        return
+            
+    def selection(self,root):
+        
+        node = root
+        #SELECTION
+        while node.isExpanded():
+            #select a child according to policy
+            #slide 74
+            list([ x.accumulatedValue/x.visitCount + math.sqrt(2)*() for x in node.children ])               
+            
+            
+            # Determine a by UCT
+
+            pass
+        return
+        
+    def expansion(self): 
+        
+        return
