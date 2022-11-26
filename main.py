@@ -6,7 +6,7 @@ def main():
     myboard = hexPosition(size=2)
     mcts = MCTS(None)
     mcts.run(myboard,10)
-    #mcts.printTree()
+    mcts.printTree()
     
     # #Display the board in standard output
     # myboard.printBoard()

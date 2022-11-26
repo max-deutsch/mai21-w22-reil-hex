@@ -65,6 +65,7 @@ class Node:
         print("Board State:")
         print(self.state)
         print("#Visited: " + str(self.visitCount-1))
+        print("AccValue: " + str(self.accumulatedValue))
         print("Possible Actions:")
         print(self.actionSpace)
         print()
@@ -95,10 +96,17 @@ class MCTS:
             #TODO check if or how board needs to be flipped aswell
             
             #SIMULATION
-            #TODO ??
+            #TODO give reward??
+            reward = random.uniform(-1, 1)
             
-            #BACKUP
-            #TODO ??
+            #BACKPROPAGATION
+            #TODO check if back prop is correct
+            node.accumulatedValue +=reward
+            parent = node.parent
+            while node.parent is not None:
+                parent.accumulatedValue +=reward
+                node = parent
+                parent = node.parent
             
         return
             
@@ -114,7 +122,7 @@ class MCTS:
             # Determine a by UCT 
             # TODO: check if formula is correct
             a = list([ x.accumulatedValue/x.visitCount + self.c*sqrt((log(node.visitCount)/x.visitCount)) for x in node.children ])
-            print(a)               
+            # print(a)               
             best = argmax(a)
             node = node.children[best]
             node.visitCount+=1
