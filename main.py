@@ -5,8 +5,8 @@ def main():
     #Initializing an object
     myboard = hexPosition(size=2)
     mcts = MCTS(None)
-    mcts.run(myboard,2)
-    mcts.printTree()
+    mcts.run(myboard,10)
+    #mcts.printTree()
     
     # #Display the board in standard output
     # myboard.printBoard()

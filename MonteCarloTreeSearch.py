@@ -6,9 +6,11 @@ Created on Thu Nov 10 15:50:06 2022
 """
 
 from hex_engine import hexPosition
+from math import log,sqrt
+from numpy import argmax
 import random
-import math
 import copy
+
 
 class Node:
 
@@ -32,7 +34,7 @@ class Node:
         self.state = boardState             #board state (array)
         self.actionSpace = actionSpace      #list of empty spots (x,y)
         
-        self.visitCount = 0         # is needed for n(s,a)
+        self.visitCount = 1         # is needed for n(s,a), init with 1 to avoid division by 0
         self.accumulatedValue = 0   # is needed for w(s,a)
 
         self.parent = None          #for backpropagation
@@ -56,15 +58,16 @@ class Node:
             self.children.append(Node(newState,newActionSpace, 2 if self.player == 1 else 1))
         pass
 
-    def determineActionWithUCT(self):
-        # TODO
-        return
     
     #print nodes dfs style
-    #TODO: bfs would be better
+    #TODO: bfs would be better, formatted somehow would be even better
     def printNode(self):
+        print("Board State:")
         print(self.state)
+        print("#Visited: " + str(self.visitCount-1))
+        print("Possible Actions:")
         print(self.actionSpace)
+        print()
         for n in self.children:
             n.printNode()
         
@@ -74,6 +77,7 @@ class MCTS:
         #our CNN?
         self.model = model
         self.root = None
+        self.c = sqrt(2)
     
     def run(self, board: hexPosition, num_iterations):
         
@@ -101,13 +105,19 @@ class MCTS:
     def selection(self):
         
         node = self.root
+        node.visitCount+=1
         while node.isExpanded():
-            # select a child according to policy - slide 74
-            # list([ x.accumulatedValue/x.visitCount + math.sqrt(2)*() for x in node.children ])               
-            # Determine a by UCT
-            
             #FIX LATER random policy for now
-            node = random.choice(node.children)
+            # node = random.choice(node.children)
+            
+            # select a child according to policy - slide 74
+            # Determine a by UCT 
+            # TODO: check if formula is correct
+            a = list([ x.accumulatedValue/x.visitCount + self.c*sqrt((log(node.visitCount)/x.visitCount)) for x in node.children ])
+            print(a)               
+            best = argmax(a)
+            node = node.children[best]
+            node.visitCount+=1
         return node
         
     def expansion(self,node): 
