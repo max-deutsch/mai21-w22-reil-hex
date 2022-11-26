@@ -6,6 +6,7 @@ Created on Thu Nov 10 15:50:06 2022
 """
 
 from hex_engine import hexPosition
+import random
 import math
 import copy
 
@@ -26,10 +27,10 @@ class Node:
 
     # TODO: invalid actions filtering
 
-    def __init__(self,state,player):
+    def __init__(self,boardState,actionSpace,player):
         
-        self.state                  #board state (array)
-        self.actionSpace            #list of empty spots (x,y)
+        self.state = boardState             #board state (array)
+        self.actionSpace = actionSpace      #list of empty spots (x,y)
         
         self.visitCount = 0         # is needed for n(s,a)
         self.accumulatedValue = 0   # is needed for w(s,a)
@@ -44,59 +45,74 @@ class Node:
         return len(self.children) > 0
     
     def Expand(self):
-        #insert all valid actions from that state into list of children
+        #insert one child for each valid action
         for action in self.actionSpace:
-            newState = copy(self.state)
+            newState = copy.deepcopy(self.state)
+            #set action position to current player
             newState[action[0]][action[1]] = self.player 
-            self.chilren.append(Node(newState))
+            newActionSpace = copy.deepcopy(self.actionSpace)
+            #remove the previous action from new action set
+            newActionSpace.remove(action)
+            self.children.append(Node(newState,newActionSpace, 2 if self.player == 1 else 1))
         pass
 
     def determineActionWithUCT(self):
-        # for
+        # TODO
         return
+    
+    #print nodes dfs style
+    #TODO: bfs would be better
+    def printNode(self):
+        print(self.state)
+        print(self.actionSpace)
+        for n in self.children:
+            n.printNode()
         
 class MCTS:
     
     def __init__(self, model):
         #our CNN?
         self.model = model
+        self.root = None
     
-    def run(self, initialState: hexPosition, num_iterations):
+    def run(self, board: hexPosition, num_iterations):
         
         #create tree with initial state
-        root = Node()
-        root.children = initialState.getActionSpace()        
+        self.root = Node(board.board,board.getActionSpace(),1)
+        
         for i in range(num_iterations):
-            node = root
-            self.selection(root)
-                
-            #invert Board?
-            
+            #SELECTION
+            node = self.selection()
+
             #EXPANSION
-            #Get all possible actions for that leaf node and initialize them as children with visitcount 0
-            newPossibleActions = node.state.getActionSpace()
-            
+            self.expansion(node)
+                
+            #invert Board? -> Expansion already inverts player
+            #TODO check if or how board needs to be flipped aswell
             
             #SIMULATION
+            #TODO ??
             
             #BACKUP
+            #TODO ??
+            
         return
             
-    def selection(self,root):
+    def selection(self):
         
-        node = root
-        #SELECTION
+        node = self.root
         while node.isExpanded():
-            #select a child according to policy
-            #slide 74
-            list([ x.accumulatedValue/x.visitCount + math.sqrt(2)*() for x in node.children ])               
-            
-            
+            # select a child according to policy - slide 74
+            # list([ x.accumulatedValue/x.visitCount + math.sqrt(2)*() for x in node.children ])               
             # Determine a by UCT
-
-            pass
-        return
+            
+            #FIX LATER random policy for now
+            node = random.choice(node.children)
+        return node
         
-    def expansion(self): 
-        
+    def expansion(self,node): 
+        node.Expand()
         return
+    def printTree(self):
+        node = self.root
+        node.printNode()        
