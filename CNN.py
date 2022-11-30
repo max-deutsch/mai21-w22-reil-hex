@@ -116,7 +116,7 @@ class CustomCNN(nn.Module):
         return {'value': value, 'policy': policy}
 
 
-def trainCNN(CNN, loader):
+def trainCNN(CNN, loader, optimizer):
     for epoch in range(10):
         for batch_idx, sample_batched in enumerate(loader):
             # importing data and moving to GPU
@@ -178,4 +178,16 @@ if __name__ == "__main__":
     CNN = CustomCNN(num_rows).to(device)
     optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
 
-    trainCNN(CNN, loader)
+    trainCNN(CNN, loader, optimizer)
+
+    # visualize what Con2v does
+    #loader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2, pin_memory=False)  # Running on CPU
+    #for batch_idx, sample_batched in enumerate(loader):
+    #    board, value, policy = sample_batched['board'].float().to(device), sample_batched['value'].to(device), \
+    #                           sample_batched['policy'].to(device)
+    #    conv_board = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=1)(board)
+    #    print(board)
+    #    print(conv_board)
+    #    break
+
+
