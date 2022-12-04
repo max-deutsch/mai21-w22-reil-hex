@@ -22,7 +22,7 @@ class MCTS:
     def run(self, game_state: hex.hexPosition, num_iterations):
         root_node = Node(parent=None)
 
-        for i in range(num_iterations): # todo: use time
+        for i in range(num_iterations):  # todo: use time
             game_state_copy = copy.deepcopy(game_state)
             current_node = root_node
             while True:
@@ -31,10 +31,11 @@ class MCTS:
                     break
 
                 # take action, obtain reward (?), observe next state
-                game_state_copy.board[action[0]][action[1]] = 1  # take action, always play as player 1
+                game_state_copy.board[action[0]][action[1]] = 1  # take action, always play as player 1 (white)
                 current_node.visitCount += 1
 
-                game_state_copy.board = game_state_copy.recodeBlackAsWhite()  # flipping the board to continue playing
+                # flipping the board to continue playing as player 1 (white)
+                game_state_copy.board = game_state_copy.recodeBlackAsWhite()
 
                 if action not in current_node.children:
                     next_node = Node(parent=current_node)  # adding current state to tree
@@ -45,7 +46,7 @@ class MCTS:
                 current_node = current_node.children[action]
 
             # todo: is this correct that rewards are flipped, because the board was flipped after the last action?
-            if game_state_copy.whiteWin():  # we always play as white
+            if game_state_copy.whiteWin():
                 reward = -1
             elif game_state_copy.blackWin():
                 reward = 1
