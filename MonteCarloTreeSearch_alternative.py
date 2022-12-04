@@ -3,26 +3,14 @@ import math
 import copy
 from ModelBase import ModelBase
 from RandomModel import RandomModel
-import random
 
 class Node:
 
     def __init__(self, parent):
-        #self.action = action  # The action taken to end up in this state from the previous Node
-        # self.state = board_state   # The current state of the board in this Node (Might be redundant with the action)
-        # self.game_state: hex.hexPosition = game_state
-
         self.visitCount = 1  # is needed for n(s,a), init with 1 to avoid division by 0
         self.accumulatedValue = 0  # is needed for w(s,a)
-
-        # todo persist action space instead of board?
-
         self.parent = parent
         self.children = {}  # key:action, value:Node
-
-    def is_added_to_tree(self):
-        # TODO visitCount > 1 maybe?
-        return True
 
 
 class MCTS:
@@ -34,7 +22,7 @@ class MCTS:
     def run(self, game_state: hex.hexPosition, num_iterations):
         root_node = Node(parent=None)
 
-        for i in range(num_iterations):  # for many, many times (?) # todo: use time
+        for i in range(num_iterations): # todo: use time
             game_state_copy = copy.deepcopy(game_state)
             current_node = root_node
             while True:
@@ -46,7 +34,7 @@ class MCTS:
                 game_state_copy.board[action[0]][action[1]] = 1  # take action, always play as player 1
                 current_node.visitCount += 1
 
-                game_state_copy.board = game_state_copy.recodeBlackAsWhite()  # flipping the board to continue playing todo: when to flip?
+                game_state_copy.board = game_state_copy.recodeBlackAsWhite()  # flipping the board to continue playing
 
                 if action not in current_node.children:
                     next_node = Node(parent=current_node)  # adding current state to tree
@@ -72,11 +60,9 @@ class MCTS:
             current_node.accumulatedValue += reward
             while current_node.parent is not None:
                 current_node = current_node.parent
-                # todo: Just guessing if the reward needs to be flipped here.
                 current_node.accumulatedValue += reward * -1
 
         return root_node
-
 
     def determine_action_by_uct(self, node: Node, game_state: hex.hexPosition):
         max_value = float('-inf')
@@ -95,22 +81,6 @@ class MCTS:
                 action_max_value = action
 
         return action_max_value
-
-    def is_final(self, node: Node):
-        return False # todo
-
-    # def take_action(self, node: Node, action):
-    #
-    #     next_game_state = copy.deepcopy(node.game_state)
-    #     next_game_state.board[action[0], action[1]] = 1  # always play as player one
-    #
-    #
-    #     # obtain reward? whiteWin?
-    #     node.visitCount += 1
-    #     # append to path?
-    #
-    #     child_node = Node(parent=current_node, game_state=next_game_state, action=action)  # is action needed?
-    #     current_node.children[action] = child_node
 
 
 if __name__ == "__main__":
