@@ -82,6 +82,28 @@ class MCTS:
                 action_max_value = action
 
         return action_max_value
+        
+    def determine_action_by_uct_including_randomness(self, node: Node, game_state: hex.hexPosition):
+    
+        max_value = float('-inf')
+        
+        actions_max_value = []
+
+        for action in game_state.getActionSpace():
+            child: Node = node.children.get(action)
+            cumulative_action_value = child.accumulatedValue if child else 0
+            action_count = child.visitCount if child else 1  # 1 is default to avoid division by 0
+            mean_action_value = cumulative_action_value / action_count  # aka exploitation term q(a', s)
+            exploration_term = self.c * math.sqrt(math.log(node.visitCount)/action_count)
+
+            value = mean_action_value + exploration_term
+            
+            if value > max_value:
+                actions_max_value = [action]
+            elif value == max_value:
+                actions_max_value.append(action)
+        
+        return np.uniform(actions_max_value)
 
 
 if __name__ == "__main__":
@@ -90,3 +112,4 @@ if __name__ == "__main__":
     game_state = hex.hexPosition(board_size)
     node = mcts.run(game_state=game_state, num_iterations=1000)
     pass
+    
