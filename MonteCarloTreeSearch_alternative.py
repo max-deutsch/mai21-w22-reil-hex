@@ -10,6 +10,7 @@ import torch
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
 import random
+import time
 
 class Node:
 
@@ -27,6 +28,7 @@ class MCTS:
         self.model = model
 
     def run(self, game_state: hex.hexPosition, num_iterations):
+        #run_start = time.time()
         root_node = Node(parent=None)
 
         for i in range(num_iterations):  # todo: use time
@@ -72,7 +74,7 @@ class MCTS:
             while current_node.parent is not None:
                 current_node = current_node.parent
                 current_node.accumulatedValue += reward * -1
-
+        #print("MCTS run--- %s seconds ---" % (time.time() - run_start))
         return self.returnValues(root_node, game_state.size)
 
     def determine_action_by_uct(self, node: Node, game_state: hex.hexPosition):
@@ -93,7 +95,10 @@ class MCTS:
                 max_value=value
             elif value == max_value:
                 actions_max_value.append(action)
+
         #print(actions_max_value)
+        if len(actions_max_value) == 0:
+            return None
         choice = random.choice(actions_max_value)
         #print(choice)
         return choice

@@ -15,24 +15,12 @@
 #####         #####
 
 # General libraries
-import pandas as pd  # For working with dataframes
 import numpy as np  # For working with image arrays
-import cv2  # For transforming image
-import matplotlib.pyplot as plt  # For representation
-# For model building
 import torch
 from torch import nn, optim
-import torchvision
-from torchvision import transforms, datasets, models, utils
 from torch.utils.data import Dataset, DataLoader
-from PIL import Image
-from sklearn.model_selection import train_test_split
-from torch.nn import functional as F
-from skimage import io, transform
-from torch.optim import lr_scheduler
-from skimage.transform import AffineTransform, warp
-from time import time
 import hex_engine as hex
+import time
 
 
 class CustomDataset(Dataset):
@@ -140,20 +128,16 @@ def trainCNN(CNN, loader, optimizer, device):
             loss.backward()
             optimizer.step()
         #print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, 10, loss.item()))
-    ts = str(int(time()))
+    ts = str(int(time.time()))
     torch.save(CNN, 'models/model-' + ts + '.pt')
 
 def evalCNN(CNN,game_state):
     board_array = []
     board_array.append(np.asarray(game_state.board))
-    value_array = np.asarray([0])
-    policy_array = np.asarray([0, 0])
     board_array = np.asarray(board_array)
-    dataset = CustomDataset(board_array, value_array, policy_array)
-    loader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2, pin_memory=False)  # Running on CPU
-    sample = next(iter(loader))
-    CNN.eval()  # needed when nor training
-    determine_results = CNN(sample['board'])
+    CNN.eval()  # needed when not training
+    board_array = torch.from_numpy(board_array).unsqueeze(0).float()
+    determine_results = CNN(board_array)
     CNN.train()  # switches training back on
     return determine_results
 

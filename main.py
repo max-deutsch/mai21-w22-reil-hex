@@ -12,12 +12,13 @@ import torch
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
 import random
+import time
 
 def main():
 
     board_size = 4
-    num_mcts_iterations = 1
-    num_parallel_mcts = 2
+    num_mcts_iterations = 100
+    num_parallel_mcts = 64
     batch_size = num_parallel_mcts  # does not have to be
 
     game_state_empty = hex.hexPosition(board_size)
@@ -30,7 +31,7 @@ def main():
 
     # play until CNN converges
     # TODO: keep track previous models, losses, etc.
-    for i in range(2):
+    for i in range(1):
         print("start new game")
         game_state = hex.hexPosition(board_size)
 
@@ -41,12 +42,14 @@ def main():
             mcts_values = []
             mcts_policies = []
 
+            time_mcts = time.time()
             for i in range(num_parallel_mcts):  # TODO: this loop could be parallelized
                 mcts_result = mcts.run(game_state=game_state, num_iterations=num_mcts_iterations)
                 mcts_boards.append(np.asarray(game_state.board))
                 mcts_values.append(mcts_result['value'])
                 mcts_policies.append(mcts_result['policy'])
-
+            print("MCTS runs--- %s seconds ---" % (time.time() - time_mcts))
+            train_time= time.time()
             mcts_boards = np.asarray(mcts_boards)
             mcts_values = np.asarray(mcts_values)
             mcts_policies = np.asarray(mcts_policies)
@@ -55,7 +58,7 @@ def main():
             loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)  # Running on CPU
             CNN.train()
             trainCNN(CNN, loader, optimizer, device)
-
+            print("train CNN--- %s seconds ---" % (time.time() - train_time))
             # Take "real" action
             print("take real action")
             determine_results = evalCNN(CNN,game_state)
@@ -63,7 +66,7 @@ def main():
             state_policy = determine_results['policy']
             state_policy_probs = state_policy.detach().numpy()[0]
             action_space = game_state.getActionSpace()
-            # draw according to policy
+            # draw according to policy TODO: exploit?
             while True:
                 action_i = np.random.choice(range(board_size*board_size), 1, p=state_policy_probs)[0]
                 action = full_action_space[action_i]
