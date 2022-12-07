@@ -32,6 +32,7 @@ from skimage import io, transform
 from torch.optim import lr_scheduler
 from skimage.transform import AffineTransform, warp
 from time import time
+import hex_engine as hex
 
 
 class CustomDataset(Dataset):
@@ -46,7 +47,7 @@ class CustomDataset(Dataset):
         value = self.value[index]
         policy = self.policy[index]
 
-        sample = {'board': board.unsqueeze(0),
+        sample = {'board': board.unsqueeze(0).float(),
                   'value': value.float(),
                   'policy': policy.float()}
 
@@ -82,10 +83,11 @@ class CustomCNN(nn.Module):
         self.batch_norm3b = nn.BatchNorm2d(32)
         self.relu3b = nn.ReLU()
         self.fc3b = nn.Linear(32, num_row * num_row)
-        self.softmax3b = nn.Softmax(dim=0)
+        self.softmax3b = nn.Softmax(dim=1)
 
     # Progresses data across layers
     def forward(self, x):
+        #print(x)
         # common CNN parts
         common = self.conv_layer1(x)
         common = self.batch_norm1(common)
@@ -116,12 +118,12 @@ class CustomCNN(nn.Module):
         return {'value': value, 'policy': policy}
 
 
-def trainCNN(CNN, loader, optimizer):
-    for epoch in range(10):
+def trainCNN(CNN, loader, optimizer, device):
+    for epoch in range(1):  # TODO set epochs?
         for batch_idx, sample_batched in enumerate(loader):
             # importing data and moving to GPU
             # print(sample_batched)
-            board, value, policy = sample_batched['board'].float().to(device), sample_batched['value'].to(device), \
+            board, value, policy = sample_batched['board'].to(device), sample_batched['value'].to(device), \
                                    sample_batched['policy'].to(device)
             # print(board.size())
 
@@ -130,7 +132,6 @@ def trainCNN(CNN, loader, optimizer):
             output = CNN(board)
             value_est = output['value']
             policy_est = output['policy']
-
             loss1 = nn.MSELoss()(value_est, value.unsqueeze(1))
             loss2 = nn.CrossEntropyLoss()(policy_est, policy)
             # add regularizer?
@@ -138,10 +139,23 @@ def trainCNN(CNN, loader, optimizer):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, 10, loss.item()))
+        #print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, 10, loss.item()))
     ts = str(int(time()))
     torch.save(CNN, 'models/model-' + ts + '.pt')
 
+def evalCNN(CNN,game_state):
+    board_array = []
+    board_array.append(np.asarray(game_state.board))
+    value_array = np.asarray([0])
+    policy_array = np.asarray([0, 0])
+    board_array = np.asarray(board_array)
+    dataset = CustomDataset(board_array, value_array, policy_array)
+    loader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2, pin_memory=False)  # Running on CPU
+    sample = next(iter(loader))
+    CNN.eval()  # needed when nor training
+    determine_results = CNN(sample['board'])
+    CNN.train()  # switches training back on
+    return determine_results
 
 if __name__ == "__main__":
 
@@ -155,6 +169,8 @@ if __name__ == "__main__":
 
     for i in range(50):
         board_data = np.random.randint(low=-1, high=2, size=(num_rows, num_rows))  # 7x7 board with values -1,0,1
+        game_state = hex.hexPosition(num_rows)
+        board_data = np.asarray(game_state.board)
         board_x3 = np.dstack((board_data, board_data, board_data))  # duplicate channels
         board_array.append(board_data)
 
