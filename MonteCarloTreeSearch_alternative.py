@@ -1,7 +1,7 @@
 import hex_engine as hex
 import math
 import copy
-import numpy as  np
+import numpy as np
 from CNN import CustomCNN
 from CNN import CustomDataset
 from CNN import trainCNN
@@ -78,8 +78,10 @@ class MCTS:
         return self.returnValues(root_node, game_state.size)
 
     def determine_action_by_uct(self, node: Node, game_state: hex.hexPosition):
-        max_value = float('-inf')
-        actions_max_value = []
+        #max_value = float('-inf')
+        #actions_max_value = []
+        actions = []
+        values = []
 
         for action in game_state.getActionSpace():
             child: Node = node.children.get(action)
@@ -88,20 +90,33 @@ class MCTS:
             mean_action_value = cumulative_action_value / action_count  # aka exploitation term q(a', s)
             exploration_term = self.c * math.sqrt(math.log(node.visitCount)/action_count)
 
-            value = mean_action_value + exploration_term
+            v = mean_action_value + exploration_term
+            ## always take max
+            # if v > max_value:
+            #    actions_max_value = [action]
+            #    max_value=v
+            # elif v == max_value:
+            #    actions_max_value.append(action)
+            # choice = random.choice(actions_max_value)
 
-            if value > max_value:
-                actions_max_value = [action]
-                max_value=value
-            elif value == max_value:
-                actions_max_value.append(action)
+            ##probabilistic
+            if type(v) == float:
+                value = v
+            else:
+                value = v[0]
 
-        #print(actions_max_value)
-        if len(actions_max_value) == 0:
+
+            actions.append(action)
+            values.append(value)
+
+        if len(actions) == 0:
             return None
-        choice = random.choice(actions_max_value)
-        #print(choice)
-        return choice
+
+        values= np.array(values).astype(np.float)
+        probs = np.exp(values) / np.sum(np.exp(values), axis=0)  # softmax of values
+        action_i = np.random.choice(range(len(actions)), 1, p=probs)[0]
+
+        return actions[action_i]
 
     def returnValues(self, node: Node, board_size):
         v = node.accumulatedValue / node.visitCount
