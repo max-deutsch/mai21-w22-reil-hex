@@ -12,6 +12,8 @@
 # https://stackoverflow.com/questions/65017261/how-to-input-a-numpy-array-to-a-neural-network-in-pytorch
 # https://discuss.pytorch.org/t/input-numpy-ndarray-instead-of-images-in-a-cnn/18797/3
 
+# alpha zero for othello
+# https://github.com/2Bear/othello-zero/blob/910d9de816f33a8088b2a962f3816f6b679ecc0f/net.py#L64
 #####         #####
 
 # General libraries
