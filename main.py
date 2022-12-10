@@ -6,12 +6,10 @@ from CNN import CustomCNN
 from CNN import CustomDataset
 from CNN import trainCNN
 from CNN import evalCNN
-from MonteCarloTreeSearch_alternative import Node
 from MonteCarloTreeSearch_alternative import MCTS
 import torch
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
-import random
 import time
 
 def main():
@@ -24,6 +22,7 @@ def main():
     game_state_empty = hex.hexPosition(board_size)
     full_action_space = game_state_empty.getActionSpace()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device= "cpu"
     CNN = CustomCNN(board_size).to(device)
     optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
 
@@ -45,7 +44,7 @@ def main():
             time_mcts = time.time()
             for i in range(num_parallel_mcts):  # TODO: this loop could be parallelized
                 #try:
-                    mcts_result = mcts.run(game_state=game_state, num_iterations=num_mcts_iterations)
+                    mcts_result = mcts.run(game_state=game_state, num_iterations=num_mcts_iterations, device=device)
                     mcts_boards.append(np.asarray(game_state.board))
                     mcts_values.append(mcts_result['value'])
                     mcts_policies.append(mcts_result['policy'])
@@ -64,9 +63,9 @@ def main():
             print("train CNN--- %s seconds ---" % (time.time() - train_time))
             # Take "real" action
             print("take real action")
-            determine_results = evalCNN(CNN,game_state)
+            determine_results = evalCNN(CNN,game_state,device)
             #state_value = determine_results['value']
-            state_policy = determine_results['policy']
+            state_policy = determine_results['policy'].cpu()
             state_policy_probs = state_policy.detach().numpy()[0]
             action_space = game_state.getActionSpace()
             # draw according to policy

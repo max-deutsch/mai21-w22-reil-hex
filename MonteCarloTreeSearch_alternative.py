@@ -27,7 +27,7 @@ class MCTS:
         self.c: float = c
         self.model = model
 
-    def run(self, game_state: hex.hexPosition, num_iterations):
+    def run(self, game_state: hex.hexPosition, num_iterations,device):
         #run_start = time.time()
         root_node = Node(parent=None)
 
@@ -63,8 +63,8 @@ class MCTS:
             elif action is None:
                 reward = 0
             else:
-                determine_results = evalCNN(self.model,game_state_copy)
-                state_value = determine_results['value']
+                determine_results = evalCNN(CNN=self.model, game_state=game_state_copy,device=device)
+                state_value = determine_results['value'].cpu()
                 #prior_probability = determine_results['policy']
                 reward = state_value.detach().numpy()[0]  # convert tensor to value
 
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     mcts_policies = []
 
     for i in range(16): # TODO this loop could be parallelized
-        mcts_result = mcts.run(game_state=game_state, num_iterations=3)
+        mcts_result = mcts.run(game_state=game_state, num_iterations=3, device=device)
         mcts_boards.append(np.asarray(game_state.board))
         mcts_values.append(mcts_result['value'])
         mcts_policies.append(mcts_result['policy'])

@@ -133,12 +133,12 @@ def trainCNN(CNN, loader, optimizer, device):
     ts = str(int(time.time()))
     torch.save(CNN, 'models/model-' + ts + '.pt')
 
-def evalCNN(CNN,game_state):
+def evalCNN(CNN,game_state,device):
     board_array = []
     board_array.append(np.asarray(game_state.board))
     board_array = np.asarray(board_array)
     CNN.eval()  # needed when not training
-    board_array = torch.from_numpy(board_array).unsqueeze(0).float()
+    board_array = torch.from_numpy(board_array).unsqueeze(0).float().to(device)
     determine_results = CNN(board_array)
     CNN.train()  # switches training back on
     return determine_results
