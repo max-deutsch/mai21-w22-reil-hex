@@ -44,7 +44,7 @@ def main():
             time_mcts = time.time()
             for i in range(num_parallel_mcts):  # TODO: this loop could be parallelized
                 #try:
-                    mcts_result = mcts.run(game_state=game_state, num_iterations=num_mcts_iterations, device=device, maxTime= 0.1/num_parallel_mcts)
+                    mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 0.1/num_parallel_mcts)
                     mcts_boards.append(np.asarray(game_state.board))
                     mcts_values.append(mcts_result['value'])
                     mcts_policies.append(mcts_result['policy'])

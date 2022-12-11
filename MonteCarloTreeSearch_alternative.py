@@ -27,27 +27,17 @@ class MCTS:
         self.c: float = c
         self.model = model
 
-    def run(self, game_state: hex.hexPosition, num_iterations,device, maxTime=0):
+    def run(self, game_state: hex.hexPosition, max_num_iterations,device, maxTime=1):
         #run_start = time.time()
         root_node = Node(parent=None)
         
-        if maxTime>0:
-            end_time = time.time() + maxTime
-            while True: 
-                #print(time.time() - startTime)
-                self.loop(root_node, game_state, device)
-                if time.time() >= end_time:
-                    break
-                #print(time.monotonic() - end_time)
-                
-            #print("Expansion Count: " + str(root_node.visitCount))
-            return self.returnValues(root_node, game_state.size)
+        end_time = time.time() + maxTime
+        for i in range(max_num_iterations):  # todo: use time
+            self.loop(root_node, game_state, device)
+            if maxTime >0 and time.time() >= end_time:
+                break
         
-        else:
-            for i in range(num_iterations):  # todo: use time
-                self.loop(root_node, game_state, device)
-            
-            return self.returnValues(root_node, game_state.size)
+        return self.returnValues(root_node, game_state.size)
     
     
     def loop(self,root_node,game_state,device):
