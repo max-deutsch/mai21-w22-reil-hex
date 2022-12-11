@@ -27,55 +27,75 @@ class MCTS:
         self.c: float = c
         self.model = model
 
-    def run(self, game_state: hex.hexPosition, num_iterations,device):
+    def run(self, game_state: hex.hexPosition, num_iterations,device, maxTime=0):
         #run_start = time.time()
         root_node = Node(parent=None)
-
-        for i in range(num_iterations):  # todo: use time
-
-            game_state_copy = copy.deepcopy(game_state)
-            current_node = root_node
-            while True:
-                action = self.determine_action_by_uct(node=current_node, game_state=game_state_copy)
-
-                if action is None:
+        
+        if maxTime>0:
+            end_time = time.time() + maxTime
+            while True: 
+                #print(time.time() - startTime)
+                self.loop(root_node, game_state, device)
+                if time.time() >= end_time:
                     break
+                #print(time.monotonic() - end_time)
+                
+            #print("Expansion Count: " + str(root_node.visitCount))
+            return self.returnValues(root_node, game_state.size)
+        
+        else:
+            for i in range(num_iterations):  # todo: use time
+                self.loop(root_node, game_state, device)
+            
+            return self.returnValues(root_node, game_state.size)
+    
+    
+    def loop(self,root_node,game_state,device):
+        
+        game_state_copy = copy.deepcopy(game_state)
+        current_node = root_node
+        while True:
+            action = self.determine_action_by_uct(node=current_node, game_state=game_state_copy)
 
-                # take action, obtain reward (?), observe next state
-                game_state_copy.board[action[0]][action[1]] = 1  # take action, always play as player 1 (white)
-                current_node.visitCount += 1
-                # flipping the board to continue playing as player 1 (white)
-                game_state_copy.board = game_state_copy.recodeBlackAsWhite()
+            if action is None:
+                break
 
-                if action not in current_node.children:
-                    next_node = Node(parent=current_node)  # adding current state to tree
-                    # todo should visit count be increased?
-                    current_node.children[action] = next_node
-                    current_node = next_node
-                    break
-                current_node = current_node.children[action]
+            # take action, obtain reward (?), observe next state
+            game_state_copy.board[action[0]][action[1]] = 1  # take action, always play as player 1 (white)
+            current_node.visitCount += 1
+            # flipping the board to continue playing as player 1 (white)
+            game_state_copy.board = game_state_copy.recodeBlackAsWhite()
 
-            # todo: is this correct that rewards are flipped, because the board was flipped after the last action?
-            if game_state_copy.whiteWin():
-                reward = -1
-            elif game_state_copy.blackWin():
-                reward = 1
-            elif action is None:
-                reward = 0
-            else:
-                determine_results = evalCNN(CNN=self.model, game_state=game_state_copy,device=device)
-                state_value = determine_results['value'].cpu()
-                #prior_probability = determine_results['policy']
-                reward = state_value.detach().numpy()[0]  # convert tensor to value
+            if action not in current_node.children:
+                next_node = Node(parent=current_node)  # adding current state to tree
+                # todo should visit count be increased?
+                current_node.children[action] = next_node
+                current_node = next_node
+                break
+            current_node = current_node.children[action]
+
+        # todo: is this correct that rewards are flipped, because the board was flipped after the last action?
+        if game_state_copy.whiteWin():
+            reward = -1
+        elif game_state_copy.blackWin():
+            reward = 1
+        elif action is None:
+            reward = 0
+        else:
+            determine_results = evalCNN(CNN=self.model, game_state=game_state_copy,device=device)
+            state_value = determine_results['value'].cpu()
+            #prior_probability = determine_results['policy']
+            reward = state_value.detach().numpy()[0]  # convert tensor to value
 
 
-            # back propagate
-            current_node.accumulatedValue += reward
-            while current_node.parent is not None:
-                current_node = current_node.parent
-                current_node.accumulatedValue += reward * -1
+        # back propagate
+        current_node.accumulatedValue += reward
+        while current_node.parent is not None:
+            current_node = current_node.parent
+            current_node.accumulatedValue += reward * -1
         #print("MCTS run--- %s seconds ---" % (time.time() - run_start))
-        return self.returnValues(root_node, game_state.size)
+        
+        return
 
     def determine_action_by_uct(self, node: Node, game_state: hex.hexPosition):
         #max_value = float('-inf')
