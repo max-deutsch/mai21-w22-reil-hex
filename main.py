@@ -11,18 +11,43 @@ import torch
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
 import time
+import multiprocessing as mp
+
+
+#function to feed to mp.pool: run MCTS
+# i can be used for tracking of day (or image) in the future
+def mcts_to_pool(mcts,game_state,num_mcts_iterations,device,num_parallel_mcts):
+    try:
+        mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 2) # 0.1/num_parallel_mcts)
+        return game_state.board, mcts_result
+    except:
+        return None
+
+    return None
+
+#callback function to collect all results from async. mutliprocessing pool
+def collect_mcts_results(result):
+    global mcts_boards, mcts_values, mcts_policies
+    if mcts_values is not None:
+        board, mcts_result = result
+        mcts_boards.append(np.asarray(board))
+        mcts_values.append(mcts_result['value'])
+        mcts_policies.append(mcts_result['policy'])
+
 
 def main():
+    global mcts_boards, mcts_values, mcts_policies
 
     board_size = 4
-    num_mcts_iterations = 100
-    num_parallel_mcts = 64
+    num_mcts_iterations = 1000
+    num_parallel_mcts = 16
     batch_size = num_parallel_mcts  # does not have to be
 
     game_state_empty = hex.hexPosition(board_size)
     full_action_space = game_state_empty.getActionSpace()
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device= "cpu"
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu") # do not use GPU with multiprocessing
+    torch.set_num_threads(mp.cpu_count())
     CNN = CustomCNN(board_size).to(device)
     optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
 
@@ -42,15 +67,24 @@ def main():
             mcts_policies = []
 
             time_mcts = time.time()
-            for i in range(num_parallel_mcts):  # TODO: this loop could be parallelized
+            pool = mp.Pool(mp.cpu_count())  # create pools for parallelization
+            for i in range(num_parallel_mcts):
+                # non parallel version
                 #try:
-                    mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 0.1/num_parallel_mcts)
-                    mcts_boards.append(np.asarray(game_state.board))
-                    mcts_values.append(mcts_result['value'])
-                    mcts_policies.append(mcts_result['policy'])
+                    #mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 2)# 0.1/num_parallel_mcts)
+                    #mcts_boards.append(game_state.board)
+                    #mcts_values.append(mcts_result['value'])
+                    #mcts_policies.append(mcts_result['policy'])
                 #except:  # ignore an mcts run if it throws an error
                 #    continue
+                # parallelized
+                pool.apply_async(mcts_to_pool, args=(mcts,game_state,num_mcts_iterations,device,num_parallel_mcts), callback=collect_mcts_results)
+            # join all processes of asynch pool totgether before starting new
+            pool.close()
+            pool.join()
+
             print("MCTS runs--- %s seconds ---" % (time.time() - time_mcts))
+
             train_time= time.time()
             mcts_boards = np.asarray(mcts_boards)
             mcts_values = np.asarray(mcts_values)
