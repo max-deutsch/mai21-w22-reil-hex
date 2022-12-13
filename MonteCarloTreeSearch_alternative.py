@@ -33,11 +33,12 @@ class MCTS:
         
         end_time = time.time() + maxTime
         for i in range(max_num_iterations):  # todo: use time
+            num_iterations = i
             self.loop(root_node, game_state, device)
             if maxTime >0 and time.time() >= end_time:
                 break
         
-        return self.returnValues(root_node, game_state.size)
+        return num_iterations,self.returnValues(root_node, game_state.size)
     
     
     def loop(self,root_node,game_state,device):
