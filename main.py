@@ -18,7 +18,7 @@ import os
 def mcts_to_pool(mcts,game_state,num_mcts_iterations,device,num_parallel_mcts):
     try:
         # Peter: 1s of maxTime is about 100 iterations
-        num_iterations, mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 2) # 0.1/num_parallel_mcts)
+        num_iterations, mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 3) # 0.1/num_parallel_mcts)
         return num_iterations, game_state.board, mcts_result
     except:
         return None
@@ -51,7 +51,7 @@ def main():
     torch.set_num_threads(mp.cpu_count())
     CNN = CustomCNN(board_size).to(device)
     #CNN = torch.load('models/model-1670936299.pt').to(device)
-    optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(CNN.parameters(), lr=0.01, momentum=0.9)
 
     mcts = MCTS(model=CNN) # TODO: create new in each loop?
 
@@ -88,6 +88,7 @@ def main():
             # join all processes of asynch pool together before starting new
             pool.close()
             pool.join()
+            #print(mcts_iterations)
             print("MCTS runs--- %s seconds ---" % (time.time() - time_mcts))
             train_time= time.time()
             mcts_boards = np.asarray(mcts_boards)
@@ -111,7 +112,7 @@ def main():
                 if game_state.whiteWin(): print("white wins")
                 if game_state.blackWin(): print("black wins")
                 break
-            break
+
         # save model after each full game
         ts = str(int(time.time()))
         model_name = 'model-' + ts + '.pt'
