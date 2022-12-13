@@ -199,9 +199,13 @@ class hexPosition(object):
         """
 
         if machine == None:
-            def machine(state_list, action_list):
-                from random import choice
-                return choice(action_list)
+            def machine():
+                import torch
+                from CNN import getActionCNN
+                CNN = torch.load('models/model-1670939943.pt').cpu()
+                action = getActionCNN(CNN, self,"cpu",self.size,exploit=True )
+                print(action)
+                return action
 
         self.reset()
 
@@ -256,7 +260,7 @@ class hexPosition(object):
                 print("The human player (White) has won!")
                 self.whiteWin(verbose=True)
             else:
-                blacks_moove = machine(self.getStateVector(), self.getActionSpace())
+                blacks_moove = machine()
                 self.board[blacks_moove[0]][blacks_moove[1]] = 2
 
                 self.blackWin()
