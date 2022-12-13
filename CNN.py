@@ -214,9 +214,10 @@ def trainCNN(CNN, loader, optimizer, device):
             loss.backward()
             optimizer.step()
         #print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, 10, loss.item()))
-        print('Loss: {:.4f}'.format(loss.item()))
-    ts = str(int(time.time()))
-    torch.save(CNN, 'models/model-' + ts + '.pt')  # TODO: might be okay to do it this way
+        #print('Loss: {:.4f}'.format(loss.item()))
+    #ts = str(int(time.time()))
+    #torch.save(CNN, 'models/model-' + ts + '.pt')  # TODO: might be okay to do it this way
+    return loss
     #torch.save(CNN.state_dict(), 'models/model-' + ts + '.pt')
 
 def evalCNN(CNN,game_state,device):

@@ -10,6 +10,7 @@ from torch import optim
 from torch.utils.data import Dataset, DataLoader
 import time
 import multiprocessing as mp
+import os
 
 
 #function to feed to mp.pool: run MCTS
@@ -36,6 +37,8 @@ def collect_mcts_results(result):
 
 
 def main():
+    if not os.path.isdir("models"): os.makedirs("models")
+
     global mcts_boards, mcts_values, mcts_policies, mcts_iterations
 
     board_size = 4  # equals 4x4 game field
@@ -57,6 +60,7 @@ def main():
     for i in range(1):
         print("start new game")
         game_state = hex.hexPosition(board_size)
+        losses = []
 
         # play a whole game until the end
         while True:
@@ -89,11 +93,13 @@ def main():
             mcts_boards = np.asarray(mcts_boards)
             mcts_values = np.asarray(mcts_values)
             mcts_policies = np.asarray(mcts_policies)
-            print(mcts_iterations)
+            #print(mcts_iterations)
             train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
             loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)
             CNN.train()
-            trainCNN(CNN, loader, optimizer, device)
+            loss = trainCNN(CNN, loader, optimizer, device)
+            loss=loss.detach().numpy()
+            losses.append(loss)
             print("train CNN--- %s seconds ---" % (time.time() - train_time))
             # Take "real" action
             #print("take real action")
@@ -105,6 +111,14 @@ def main():
                 if game_state.whiteWin(): print("white wins")
                 if game_state.blackWin(): print("black wins")
                 break
+            break
+        # save model after each full game
+        ts = str(int(time.time()))
+        model_name = 'model-' + ts + '.pt'
+        torch.save(CNN, 'models/' + model_name)  # TODO: might be okay to do it this way
+        file1 = open("models/loss.txt", "a+")  # append mode
+        file1.write(model_name + "    " + "avg.loss: " + str(np.mean(losses)) + "\n")
+        file1.close()
 
 
     
