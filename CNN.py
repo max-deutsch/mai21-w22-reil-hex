@@ -54,56 +54,140 @@ class CustomCNN(nn.Module):
     #  Determine what layers and their order in CNN object
     def __init__(self, num_row):
         super(CustomCNN, self).__init__()
-        self.conv_layer1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=2)
-        self.batch_norm1 = nn.BatchNorm2d(num_features=32)
-        self.relu1 = nn.ReLU()
+        use_channels = 32
 
-        self.conv_layer2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2)
-        self.batch_norm2 = nn.BatchNorm2d(32)
-        self.relu2 = nn.ReLU()
+        # entry convolution layer
+        self.conv_layer0 = nn.Conv2d(in_channels=1, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm0 = nn.BatchNorm2d(num_features=use_channels)
+        self.relu0 = nn.ReLU()
+
+        # old block
+        #self.conv_layer2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2)
+        #self.batch_norm2 = nn.BatchNorm2d(32)
+        #self.relu2 = nn.ReLU()
+
+        # residual block #1
+        self.conv_layer1a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm1a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu1a = nn.ReLU()
+        self.conv_layer1b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm1b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu1b = nn.ReLU()
+
+        # residual block #2
+        self.conv_layer2a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm2a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu2a = nn.ReLU()
+        self.conv_layer2b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm2b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu2b = nn.ReLU()
+
+        # residual block #3
+        self.conv_layer3a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm3a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu3a = nn.ReLU()
+        self.conv_layer3b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm3b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu3b = nn.ReLU()
+
+        # residual block #4
+        self.conv_layer4a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm4a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu4a = nn.ReLU()
+        self.conv_layer4b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm4b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu4b = nn.ReLU()
+
 
         # value output
-        self.conv_layer3a = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2)
-        self.batch_norm3a = nn.BatchNorm2d(32)
-        self.relu3a = nn.ReLU()
-        self.fc3a = nn.Linear(32, 1)
+        self.conv_layerV1 = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_normV1 = nn.BatchNorm2d(use_channels)
+        self.reluV1 = nn.ReLU()
+        self.fcV1 = nn.Linear(use_channels * num_row * num_row, use_channels)
+        self.reluV2 = nn.ReLU()
+        self.fcV2 = nn.Linear(use_channels, 1)
 
         # policy output
-        self.conv_layer3b = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2)
-        self.batch_norm3b = nn.BatchNorm2d(32)
-        self.relu3b = nn.ReLU()
-        self.fc3b = nn.Linear(32, num_row * num_row)
-        self.softmax3b = nn.Softmax(dim=1)
+        self.conv_layerP1 = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_normP1 = nn.BatchNorm2d(use_channels)
+        self.reluP1 = nn.ReLU()
+        self.fcP1 = nn.Linear(use_channels * num_row  *num_row, num_row * num_row)
+        self.softmaxP1 = nn.Softmax(dim=1)
 
     # Progresses data across layers
     def forward(self, x):
-        #print(x)
-        # common CNN parts
-        common = self.conv_layer1(x)
-        common = self.batch_norm1(common)
-        common = self.relu1(common)
+        ## common CNN parts
+        # entry convolution layer
+        common = self.conv_layer0(x)
+        common = self.batch_norm0(common)
+        common = self.relu0(common)
 
-        common = self.conv_layer2(common)
-        common = self.batch_norm2(common)
-        common = self.relu2(common)
+        # old block
+        #common = self.conv_layer2(common)
+        #common = self.batch_norm2(common)
+        #common = self.relu2(common)
+
+        # residual block #1
+        orig_common = common
+        common = self.conv_layer1a(common)
+        common = self.batch_norm1a(common)
+        common = self.relu1a(common)
+        common = self.conv_layer1b(common)
+        common = self.batch_norm1b(common)
+        common += orig_common
+        common = self.relu1b(common)
+
+        # residual block #2
+        orig_common = common
+        common = self.conv_layer2a(common)
+        common = self.batch_norm2a(common)
+        common = self.relu2a(common)
+        common = self.conv_layer2b(common)
+        common = self.batch_norm2b(common)
+        common += orig_common
+        common = self.relu2b(common)
+
+        # residual block #3
+        orig_common = common
+        common = self.conv_layer3a(common)
+        common = self.batch_norm3a(common)
+        common = self.relu3a(common)
+        common = self.conv_layer3b(common)
+        common = self.batch_norm3b(common)
+        common += orig_common
+        common = self.relu3b(common)
+
+        # residual block #4
+        orig_common = common
+        common = self.conv_layer4a(common)
+        common = self.batch_norm4a(common)
+        common = self.relu4a(common)
+        common = self.conv_layer4b(common)
+        common = self.batch_norm4b(common)
+        common += orig_common
+        common = self.relu4b(common)
+
 
         # value output
-        value = self.conv_layer3a(common)
-        value = self.batch_norm3a(value)
-        value = self.relu3a(value)
+        value = self.conv_layerV1(common)
+        value = self.batch_normV1(value)
+        #value = self.reluV1(value)
         # value = torch.flatten(value)
         value = value.reshape(value.size(0), -1)
-        value = self.fc3a(value)
+        value = self.fcV1(value)
+        value = self.reluV2(value)
+        value = value.reshape(value.size(0), -1)
+        value = self.fcV2(value)
         value = torch.tanh(value)
 
         # policy output
-        policy = self.conv_layer3b(common)
-        policy = self.batch_norm3b(policy)
-        policy = self.relu3b(policy)
+        policy = self.conv_layerP1(common)
+        policy = self.batch_normP1(policy)
+        policy = self.reluP1(policy)
         # policy = torch.flatten(policy)
         policy = policy.reshape(policy.size(0), -1)
-        policy = self.fc3b(policy)
-        policy = self.softmax3b(policy)  # nn.LogSoftmax() might be more performant
+        policy = self.fcP1(policy)
+        policy = self.softmaxP1(policy)  # nn.LogSoftmax() might be more performant
 
         return {'value': value, 'policy': policy}
 
@@ -118,7 +202,7 @@ def trainCNN(CNN, loader, optimizer, device):
             # print(board.size())
 
             # zero the parameter gradients
-
+            optimizer.zero_grad()  # TODO: is this right position?
             output = CNN(board)
             value_est = output['value']
             policy_est = output['policy']
@@ -126,12 +210,14 @@ def trainCNN(CNN, loader, optimizer, device):
             loss2 = nn.CrossEntropyLoss()(policy_est, policy)
             # add regularizer?
             loss = loss1 + loss2
-            optimizer.zero_grad()
+            # optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         #print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, 10, loss.item()))
+        print('Loss: {:.4f}'.format(loss.item()))
     ts = str(int(time.time()))
-    torch.save(CNN, 'models/model-' + ts + '.pt')
+    torch.save(CNN, 'models/model-' + ts + '.pt')  # TODO: might be okay to do it this way
+    #torch.save(CNN.state_dict(), 'models/model-' + ts + '.pt')
 
 def evalCNN(CNN,game_state,device):
     board_array = []
@@ -139,9 +225,35 @@ def evalCNN(CNN,game_state,device):
     board_array = np.asarray(board_array)
     CNN.eval()  # needed when not training
     board_array = torch.from_numpy(board_array).unsqueeze(0).float().to(device)
-    determine_results = CNN(board_array)
+    with torch.no_grad():
+        determine_results = CNN(board_array)
     CNN.train()  # switches training back on
     return determine_results
+
+def getActionCNN(CNN, game_state,device,board_size,exploit=True):
+    game_state_empty = hex.hexPosition(board_size)
+    full_action_space = game_state_empty.getActionSpace()
+    determine_results = evalCNN(CNN, game_state, device)
+    state_policy = determine_results['policy'].cpu()
+    state_policy_probs = state_policy.detach().numpy()[0]
+    action_space = game_state.getActionSpace()
+    # draw according to policy
+    ##exploit approach
+    if exploit:
+        while True:
+            action_i = np.argmax(state_policy_probs)
+            action = full_action_space[action_i]
+            if action in action_space:  # take next best if policy gives an action which is not possible
+                break
+            state_policy_probs[action_i] = 0
+    else:
+        while True:
+            action_i = np.random.choice(range(board_size * board_size), 1, p=state_policy_probs)[0]
+            action = full_action_space[action_i]
+            if action in action_space:  # redraw if policy gives an action which is not possible
+                break
+    return action
+
 
 if __name__ == "__main__":
 
