@@ -17,8 +17,12 @@ import os
 # i can be used for tracking of day (or image) in the future
 def mcts_to_pool(mcts,game_state,num_mcts_iterations,device,num_parallel_mcts):
     try:
-        # Peter: 1s of maxTime is about 100 iterations
-        num_iterations, mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations, device=device, maxTime= 3) # 0.1/num_parallel_mcts)
+        # Peter: 1s of max_seconds is about 100 iterations
+        num_iterations, mcts_result = mcts.run(
+            game_state=game_state,
+            max_num_iterations=num_mcts_iterations,
+            device=device,
+            max_seconds=3)  # 0.1/num_parallel_mcts)
         return num_iterations, game_state.board, mcts_result
     except:
         return None

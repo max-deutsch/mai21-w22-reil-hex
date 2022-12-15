@@ -27,18 +27,16 @@ class MCTS:
         self.c: float = c
         self.model = model
 
-    def run(self, game_state: hex.hexPosition, max_num_iterations,device, maxTime=1):
-        #run_start = time.time()
+    def run(self, game_state: hex.hexPosition, max_num_iterations, device, max_seconds=1):
         root_node = Node(parent=None)
-        
-        end_time = time.time() + maxTime
+        end_time = time.time() + max_seconds
         for i in range(max_num_iterations):  # todo: use time
             num_iterations = i
             self.loop(root_node, game_state, device)
-            if maxTime >0 and time.time() >= end_time:
+            if max_seconds > 0 and time.time() >= end_time:
                 break
         
-        return num_iterations,self.returnValues(root_node, game_state.size)
+        return num_iterations, self.returnValues(root_node, game_state.size)
     
     
     def loop(self,root_node,game_state,device):
@@ -158,31 +156,31 @@ class MCTS:
                 'policy': pi_array}
 
 
-if __name__ == "__main__":
-    board_size = 4
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    CNN = CustomCNN(board_size).to(device)
-    optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
-    mcts = MCTS(model=CNN)
-
-    game_state = hex.hexPosition(board_size)
-
-    # run 16 MCTS and feed into CNN
-    mcts_boards = []
-    mcts_values = []
-    mcts_policies = []
-
-    for i in range(16): # TODO this loop could be parallelized
-        mcts_result = mcts.run(game_state=game_state, num_iterations=3, device=device)
-        mcts_boards.append(np.asarray(game_state.board))
-        mcts_values.append(mcts_result['value'])
-        mcts_policies.append(mcts_result['policy'])
-
-    mcts_boards = np.asarray(mcts_boards)
-    mcts_values = np.asarray(mcts_values)
-    mcts_policies = np.asarray(mcts_policies)
-
-    train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
-    loader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=2, pin_memory=False)  # Running on CPU
-    CNN.train()
-    trainCNN(CNN, loader, optimizer, device)
+# if __name__ == "__main__":
+#     board_size = 4
+#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#     CNN = CustomCNN(board_size).to(device)
+#     optimizer = optim.SGD(CNN.parameters(), lr=0.001, momentum=0.9)
+#     mcts = MCTS(model=CNN)
+#
+#     game_state = hex.hexPosition(board_size)
+#
+#     # run 16 MCTS and feed into CNN
+#     mcts_boards = []
+#     mcts_values = []
+#     mcts_policies = []
+#
+#     for i in range(16): # TODO this loop could be parallelized
+#         mcts_result = mcts.run(game_state=game_state, num_iterations=3, device=device)
+#         mcts_boards.append(np.asarray(game_state.board))
+#         mcts_values.append(mcts_result['value'])
+#         mcts_policies.append(mcts_result['policy'])
+#
+#     mcts_boards = np.asarray(mcts_boards)
+#     mcts_values = np.asarray(mcts_values)
+#     mcts_policies = np.asarray(mcts_policies)
+#
+#     train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
+#     loader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=2, pin_memory=False)  # Running on CPU
+#     CNN.train()
+#     trainCNN(CNN, loader, optimizer, device)
