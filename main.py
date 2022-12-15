@@ -4,7 +4,7 @@ import copy
 import numpy as  np
 from CNN import CustomCNN, CustomDataset, trainCNN, getActionCNN
 from CNN import evalCNN
-from MonteCarloTreeSearch_alternative import MCTS
+from MonteCarloTreeSearch import MCTS
 import torch
 from torch import optim
 from torch.utils.data import Dataset, DataLoader
