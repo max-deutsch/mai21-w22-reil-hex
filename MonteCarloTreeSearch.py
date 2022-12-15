@@ -81,7 +81,8 @@ class MCTS:
         current_node.accumulatedValue += reward
         while current_node.parent is not None:
             current_node = current_node.parent
-            current_node.accumulatedValue += reward * -1
+            reward = reward * -1
+            current_node.accumulatedValue += reward
         #print("MCTS run--- %s seconds ---" % (time.time() - run_start))
         
         return
