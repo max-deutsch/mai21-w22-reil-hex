@@ -22,6 +22,7 @@ import torch
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
 import hex_engine as hex
+from random import choice
 import time
 
 
@@ -239,21 +240,21 @@ def getActionCNN(CNN, game_state,device,board_size,exploit=True):
     state_policy_probs = state_policy.detach().numpy()[0]
     action_space = game_state.getActionSpace()
     # draw according to policy
-    ##exploit approach
-    if exploit:
+    if exploit:  # exploit approach
         while True:
             action_i = np.argmax(state_policy_probs)
             action = full_action_space[action_i]
             if action in action_space:  # take next best if policy gives an action which is not possible
-                break
+                return action
             state_policy_probs[action_i] = 0
-    else:
-        while True:
+    else:  # explore approach
+        for i in range(100):
             action_i = np.random.choice(range(board_size * board_size), 1, p=state_policy_probs)[0]
             action = full_action_space[action_i]
             if action in action_space:  # redraw if policy gives an action which is not possible
-                break
-    return action
+                return action
+    # if exploration does not draw anything within 100 tries, draw random
+    return choice(action_space)
 
 
 if __name__ == "__main__":
