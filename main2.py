@@ -14,7 +14,6 @@ import os
 
 
 # function to feed to mp.pool: run MCTS
-# i can be used for tracking of day (or image) in the future
 def mcts_to_pool(mcts, game_state, num_mcts_iterations, device, maxTime):
     try:
         # Peter: 1s of maxTime is about 100 iterations
@@ -121,6 +120,7 @@ def modelVSmodel(board, model1, model2):
     while True:
         action = getActionCNN(model1, board, "cpu", board.size, exploit=True)
         board.board[action[0]][action[1]] = 1
+        board.printBoard()
         if board.whiteWin():
             break
 
@@ -128,6 +128,7 @@ def modelVSmodel(board, model1, model2):
         action = getActionCNN(model2, board, "cpu", board.size, exploit=True)
         board.board[action[0]][action[1]] = 1
         board.board = board.recodeBlackAsWhite(printBoard=False)
+        board.printBoard()
         if board.blackWin():
             break
 
@@ -160,54 +161,51 @@ def main():
     device = torch.device("cpu")  # do not use GPU with multiprocessing
     torch.set_num_threads(mp.cpu_count())
     CNN = CustomCNN(board_size).to(device)
-    #CNN = torch.load('models/model-1671441929.pt').to(device)
+    #CNN = torch.load('models/model-1671476341.pt').to(device)
     optimizer = optim.SGD(CNN.parameters(), lr=learning_rate, momentum=momentum)
 
     #mcts = MCTS(model=CNN, c=mcts_c) # TODO: create new in each loop?
 
 
-    CNN_current = CNN
+    CNN_current = copy.deepcopy(CNN)
+    for i in range(0):
+        mcts_boards = []
+        mcts_values = []
+        mcts_policies = []
+        mcts_iterations = []
+        pool = mp.Pool(mp.cpu_count())
+        game_time = time.time()
+        for i in range(num_parallel_games):
+            pool.apply_async(game_to_pool, args=(CNN, board_size, num_mcts_iterations, device, max_mcts_time, mcts_c),
+                             callback=collect_game_results)
+        pool.close()
+        pool.join()
+        print("Time for " + str(num_parallel_games) + " games: " + str(time.time() - game_time) + "s" )
+        mcts_boards = np.asarray(mcts_boards)
+        mcts_values = np.asarray(mcts_values)
+        mcts_policies = np.asarray(mcts_policies)
+        epochs = 0
+        # learn for train_max_count
+        train_time = time.time()
+        for i in range(train_epochs):
+            epochs += 1
+            train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
+            loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)
+            CNN.train()
+            train_loss = trainCNN(CNN, loader, optimizer, device)
+            print("-Epoch " + str(i) + ": loss= " + str(train_loss))
 
+        print("Time for " + str(epochs) + " epochs of training: " + str(time.time() - train_time) + "s")
+        #print("Loss: " + str(train_loss))
 
-    mcts_boards = []
-    mcts_values = []
-    mcts_policies = []
-    mcts_iterations = []
-    mcts_values2 = []
-    pool = mp.Pool(mp.cpu_count())
-    game_time = time.time()
-    for i in range(num_parallel_games):
-        pool.apply_async(game_to_pool, args=(CNN, board_size, num_mcts_iterations, device, max_mcts_time, mcts_c),
-                         callback=collect_game_results)
-    pool.close()
-    pool.join()
-    print("Time for " + str(num_parallel_games) + " games: " + str(time.time() - game_time) + "s" )
-    mcts_boards = np.asarray(mcts_boards)
-    mcts_values = np.asarray(mcts_values)
-    mcts_policies = np.asarray(mcts_policies)
-
-    epochs = 0
-    # learn for train_max_count
-    train_time = time.time()
-    for i in range(train_epochs):
-        epochs += 1
-        train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
-        loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)
-        CNN.train()
-        loss = trainCNN(CNN, loader, optimizer, device)
-    loss = loss.detach().numpy()
-    print("Time for " + str(epochs) + " epochs of training: " + str(time.time() - train_time) + "s")
-    print("Loss: " + str(loss))
-    # save model after training
-    ts = str(int(time.time()))
-    model_name = 'model-' + ts + '.pt'
-    torch.save(CNN, 'models/' + model_name)  # TODO: might be okay to do it this way
-    CNN_new = CNN
-    file1 = open("models/loss.txt", "a+")  # append mode
-    file1.write(model_name + "    " + "loss: " + str(loss) + "\n")
-    file1.close()
-
-
+        # save model after training
+        ts = str(int(time.time()))
+        model_name = 'model-' + ts + '.pt'
+        torch.save(CNN, 'models/' + model_name)  # TODO: might be okay to do it this way
+        CNN_new = copy.deepcopy(CNN)
+        file1 = open("models/loss.txt", "a+")  # append mode
+        file1.write(model_name + "    " + "loss: " + str(train_loss) + "\n")
+        file1.close()
 
 
     # #Display the board in standard output
@@ -232,18 +230,20 @@ def main():
 
     # CNN vs random
     """
-    CNN = torch.load('models/4x4_2.pt').to(device)
-    CNN1 = CNN
-    CNN2 = CNN
+    CNN1 = torch.load('models/4x4_3.pt').to(device)
+    #CNN2 = torch.load('models/4x4_2.pt').to(device)
+    CNN2 = CustomCNN(board_size).to(device)
     player1 = 0
     player2 = 0
     runs = 1000
     for i in range(runs):
-        if modelVSmodel(myboard, CNN1,CNN2):
+        if modelVSrandom(myboard, CNN1):
+        #if modelVSmodel(myboard, CNN1, CNN2):
             player1 += 1
 
         myboard.reset()
-        if modelVSmodel(myboard, CNN2,CNN1):
+        if randomVSmodel(myboard, CNN1):
+        #if modelVSmodel(myboard, CNN2, CNN1):
             player2 += 1
 
         myboard.reset()

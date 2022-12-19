@@ -14,7 +14,6 @@ import os
 
 
 #function to feed to mp.pool: run MCTS
-# i can be used for tracking of day (or image) in the future
 def mcts_to_pool(mcts,game_state,num_mcts_iterations,device, maxTime):
     try:
         # Peter: 1s of max_seconds is about 100 iterations
@@ -158,10 +157,10 @@ def main():
                 train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
                 loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)
                 CNN.train()
-                loss = trainCNN(CNN, loader, optimizer, device)
-                #loss=loss.detach().numpy()
-                #losses.append(loss)
+                train_loss = trainCNN(CNN, loader, optimizer, device)
+
             print("train CNN--- %s seconds ---" % (time.time() - train_time))
+            print("Loss: " + str(train_loss))
             # Take "real" action
             #print("take real action")
             action = getActionCNN(CNN=CNN,game_state=game_state,device=device,board_size=board_size, exploit=False)

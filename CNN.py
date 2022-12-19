@@ -214,6 +214,7 @@ class CustomCNN(nn.Module):
 
 def trainCNN(CNN, loader, optimizer, device):
     for epoch in range(1):  # TODO set epochs?
+        train_loss = 0.0
         for batch_idx, sample_batched in enumerate(loader):
             # importing data and moving to GPU
             # print(sample_batched)
@@ -230,8 +231,9 @@ def trainCNN(CNN, loader, optimizer, device):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            train_loss = train_loss + ((1 / (batch_idx + 1)) * (loss.data - train_loss))
 
-    return loss
+    return train_loss.detach().numpy()
 
 
 def evalCNN(CNN,game_state,device):
