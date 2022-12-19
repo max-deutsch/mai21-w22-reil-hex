@@ -35,10 +35,10 @@ class MCTS:
             self.loop(root_node, game_state, device)
             if max_seconds > 0 and time.time() >= end_time:
                 break
-        
-        return num_iterations, self.returnValues(root_node, game_state.size)
-    
-    
+
+        return num_iterations, self.returnValues(root_node, copy.deepcopy(game_state))
+
+
     def loop(self,root_node,game_state,device):
         
         game_state_copy = copy.deepcopy(game_state)
@@ -128,7 +128,8 @@ class MCTS:
 
         return actions[action_i]
 
-    def returnValues(self, node: Node, board_size):
+    def returnValues(self, node: Node, game_state):
+        board_size = game_state.size
         v = node.accumulatedValue / node.visitCount
         if type(v) == float:
             value = v
@@ -154,7 +155,8 @@ class MCTS:
 
         return {'node': node,
                 'value': value,
-                'policy': pi_array}
+                'policy': pi_array,
+                'board': game_state.board}
 
 
 # if __name__ == "__main__":
