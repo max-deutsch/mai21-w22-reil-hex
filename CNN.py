@@ -55,7 +55,10 @@ class CustomCNN(nn.Module):
     #  Determine what layers and their order in CNN object
     def __init__(self, num_row):
         super(CustomCNN, self).__init__()
-        use_channels = 32
+        use_channels = 64
+        value_channels = 2
+        policy_channels = 2
+
 
         # entry convolution layer
         self.conv_layer0 = nn.Conv2d(in_channels=1, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
@@ -99,20 +102,28 @@ class CustomCNN(nn.Module):
         self.batch_norm4b = nn.BatchNorm2d(num_features=use_channels)
         self.relu4b = nn.ReLU()
 
+        # residual block #5
+        self.conv_layer5a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm5a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu5a = nn.ReLU()
+        self.conv_layer5b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm5b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu5b = nn.ReLU()
+
 
         # value output
-        self.conv_layerV1 = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
-        self.batch_normV1 = nn.BatchNorm2d(use_channels)
+        self.conv_layerV1 = nn.Conv2d(in_channels=use_channels, out_channels=value_channels, kernel_size=1, stride=1, padding=0)
+        self.batch_normV1 = nn.BatchNorm2d(value_channels)
         self.reluV1 = nn.ReLU()
-        self.fcV1 = nn.Linear(use_channels * num_row * num_row, use_channels)
+        self.fcV1 = nn.Linear(value_channels * num_row * num_row, use_channels)
         self.reluV2 = nn.ReLU()
         self.fcV2 = nn.Linear(use_channels, 1)
 
         # policy output
-        self.conv_layerP1 = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
-        self.batch_normP1 = nn.BatchNorm2d(use_channels)
+        self.conv_layerP1 = nn.Conv2d(in_channels=use_channels, out_channels=policy_channels, kernel_size=1, stride=1, padding=0)
+        self.batch_normP1 = nn.BatchNorm2d(policy_channels)
         self.reluP1 = nn.ReLU()
-        self.fcP1 = nn.Linear(use_channels * num_row  *num_row, num_row * num_row)
+        self.fcP1 = nn.Linear(policy_channels * num_row * num_row, num_row * num_row)
         self.softmaxP1 = nn.Softmax(dim=1)
 
     # Progresses data across layers
@@ -168,6 +179,16 @@ class CustomCNN(nn.Module):
         common += orig_common
         common = self.relu4b(common)
 
+        # residual block #5
+        orig_common = common
+        common = self.conv_layer5a(common)
+        common = self.batch_norm5a(common)
+        common = self.relu5a(common)
+        common = self.conv_layer5b(common)
+        common = self.batch_norm5b(common)
+        common += orig_common
+        common = self.relu5b(common)
+
 
         # value output
         value = self.conv_layerV1(common)
@@ -202,8 +223,6 @@ def trainCNN(CNN, loader, optimizer, device):
                                    sample_batched['policy'].to(device)
             # print(board.size())
 
-            # zero the parameter gradients
-            optimizer.zero_grad()  # TODO: is this right position?
             output = CNN(board)
             value_est = output['value']
             policy_est = output['policy']
@@ -211,7 +230,7 @@ def trainCNN(CNN, loader, optimizer, device):
             loss2 = nn.CrossEntropyLoss()(policy_est, policy)
             # add regularizer?
             loss = loss1 + loss2
-            # optimizer.zero_grad()
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         #print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch + 1, 10, loss.item()))
@@ -238,6 +257,10 @@ def getActionCNN(CNN, game_state,device,board_size,exploit=True):
     determine_results = evalCNN(CNN, game_state, device)
     state_policy = determine_results['policy'].cpu()
     state_policy_probs = state_policy.detach().numpy()[0]
+    #state_value = determine_results['value'].cpu()
+    #reward = state_value.detach().numpy()[0]  # convert tensor to value
+    #print(reward)
+    #print(state_policy_probs)
     action_space = game_state.getActionSpace()
     # draw according to policy
     if exploit:  # exploit approach
