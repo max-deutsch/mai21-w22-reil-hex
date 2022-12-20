@@ -202,7 +202,7 @@ class hexPosition(object):
             def machine():
                 import torch
                 from CNN import getActionCNN
-                CNN = torch.load('models/model-1671195726.pt').cpu()
+                CNN = torch.load('models_saved/4x4_1.pt').cpu()
                 self.board = self.recodeBlackAsWhite(printBoard=False)
                 action = getActionCNN(CNN, self, "cpu", self.size, exploit=True)
                 self.board = self.recodeBlackAsWhite(printBoard=False)

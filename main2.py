@@ -71,7 +71,8 @@ def game_to_pool(CNN, board_size, num_mcts_iterations, device, maxTime, mcts_c):
             tmp_mcts_values_override[i] = reward
             reward *= -1
         # tmp_mcts_values_override can be returned instead of tmp_mcts_values
-        return tmp_mcts_iterations, tmp_mcts_boards, tmp_mcts_values, tmp_mcts_policies
+        #return tmp_mcts_iterations, tmp_mcts_boards, tmp_mcts_values, tmp_mcts_policies
+        return tmp_mcts_iterations, tmp_mcts_boards, tmp_mcts_values_override, tmp_mcts_policies
     except:
         return None
 
@@ -118,17 +119,20 @@ def randomVSmodel(board, model):
 
 def modelVSmodel(board, model1, model2):
     while True:
+
         action = getActionCNN(model1, board, "cpu", board.size, exploit=True)
+        #action_ = getActionCNN(model2, board, "cpu", board.size, exploit=True)
         board.board[action[0]][action[1]] = 1
-        board.printBoard()
+        #board.printBoard()
         if board.whiteWin():
             break
 
         board.board = board.recodeBlackAsWhite(printBoard=False)
+        #action_ = getActionCNN(model1, board, "cpu", board.size, exploit=True)
         action = getActionCNN(model2, board, "cpu", board.size, exploit=True)
         board.board[action[0]][action[1]] = 1
         board.board = board.recodeBlackAsWhite(printBoard=False)
-        board.printBoard()
+        #board.printBoard()
         if board.blackWin():
             break
 
@@ -153,7 +157,7 @@ def main():
 
     # learning condition
     train_epochs = 10
-    learning_rate = 0.01
+    learning_rate = 0.01  # TODO: make schedule dependent. Decrease by factor after each few hundred steps
     momentum = 0.9
 
 
@@ -161,14 +165,14 @@ def main():
     device = torch.device("cpu")  # do not use GPU with multiprocessing
     torch.set_num_threads(mp.cpu_count())
     CNN = CustomCNN(board_size).to(device)
-    #CNN = torch.load('models/model-1671476341.pt').to(device)
+    #CNN = torch.load('models/model-1671493859.pt').to(device)
     optimizer = optim.SGD(CNN.parameters(), lr=learning_rate, momentum=momentum)
 
     #mcts = MCTS(model=CNN, c=mcts_c) # TODO: create new in each loop?
 
 
     CNN_current = copy.deepcopy(CNN)
-    for i in range(0):
+    for i in range(1000):
         mcts_boards = []
         mcts_values = []
         mcts_policies = []
@@ -230,20 +234,19 @@ def main():
 
     # CNN vs random
     """
-    CNN1 = torch.load('models/4x4_3.pt').to(device)
-    #CNN2 = torch.load('models/4x4_2.pt').to(device)
-    CNN2 = CustomCNN(board_size).to(device)
+    CNN1 = torch.load('models/model-1671527638.pt').to(device)
+    CNN2 = torch.load('models/4x4_3.pt').to(device)
     player1 = 0
     player2 = 0
     runs = 1000
     for i in range(runs):
-        if modelVSrandom(myboard, CNN1):
-        #if modelVSmodel(myboard, CNN1, CNN2):
+        #if modelVSrandom(myboard, CNN1):
+        if modelVSmodel(myboard, CNN1, CNN2):
             player1 += 1
 
         myboard.reset()
-        if randomVSmodel(myboard, CNN1):
-        #if modelVSmodel(myboard, CNN2, CNN1):
+        #if randomVSmodel(myboard, CNN1):
+        if modelVSmodel(myboard, CNN2, CNN1):
             player2 += 1
 
         myboard.reset()
