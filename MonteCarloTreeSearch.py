@@ -19,7 +19,7 @@ class Node:
         self.accumulatedValue = 0  # is needed for w(s,a)
         self.parent = parent
         self.children = {}  # key:action, value:Node
-
+        self.endReward = None  # Denotes this Node as an end state with the respective reward
 
 class MCTS:
 
@@ -42,19 +42,27 @@ class MCTS:
     def loop(self,root_node,game_state,device):
         
         game_state_copy = copy.deepcopy(game_state)
+        # print("loop start")
+        # game_state_copy.printBoard()
         current_node = root_node
         while True:
-            action = self.determine_action_by_uct(node=current_node, game_state=game_state_copy)
+            if current_node.endReward:
+                break
 
+            action = self.determine_action_by_uct(node=current_node, game_state=game_state_copy)
+            # print("got action: ", action)
             if action is None:
                 break
 
             # take action, obtain reward (?), observe next state
             game_state_copy.board[action[0]][action[1]] = 1  # take action, always play as player 1 (white)
+            # print("took action as white: ", action)
+            # game_state_copy.printBoard()
             current_node.visitCount += 1
             # flipping the board to continue playing as player 1 (white)
             game_state_copy.board = game_state_copy.recodeBlackAsWhite()
-
+            # print("flipped board")
+            # game_state_copy.printBoard()
             if action not in current_node.children:
                 next_node = Node(parent=current_node)  # adding current state to tree
                 # todo should visit count be increased?
@@ -63,11 +71,18 @@ class MCTS:
                 break
             current_node = current_node.children[action]
 
+        if current_node.endReward:
+            # using endReward instead of having to calculate winner again
+            reward = current_node.endReward
+            pass
         # todo: is this correct that rewards are flipped, because the board was flipped after the last action?
-        if game_state_copy.whiteWin():
+        elif game_state_copy.whiteWin():
+            # Should never happen
             reward = -1
+            current_node.endReward = reward
         elif game_state_copy.blackWin():
             reward = 1
+            current_node.endReward = reward
         elif action is None:
             reward = 0
         else:
@@ -76,7 +91,7 @@ class MCTS:
             #prior_probability = determine_results['policy']
             reward = state_value.detach().numpy()[0]  # convert tensor to value
 
-
+        # print("Got reward: ", reward)
         # back propagate
         current_node.accumulatedValue += reward
         while current_node.parent is not None:
