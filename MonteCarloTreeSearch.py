@@ -75,11 +75,6 @@ class MCTS:
             # using endReward instead of having to calculate winner again
             reward = current_node.endReward
             pass
-        # todo: is this correct that rewards are flipped, because the board was flipped after the last action?
-        elif game_state_copy.whiteWin():
-            # Should never happen
-            reward = -1
-            current_node.endReward = reward
         elif game_state_copy.blackWin():
             reward = 1
             current_node.endReward = reward
