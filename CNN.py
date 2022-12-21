@@ -64,10 +64,6 @@ class CustomCNN(nn.Module):
         self.batch_norm0 = nn.BatchNorm2d(num_features=use_channels)
         self.relu0 = nn.ReLU()
 
-        # old block
-        #self.conv_layer2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2)
-        #self.batch_norm2 = nn.BatchNorm2d(32)
-        #self.relu2 = nn.ReLU()
 
         # residual block #1
         self.conv_layer1a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
@@ -109,6 +105,38 @@ class CustomCNN(nn.Module):
         self.batch_norm5b = nn.BatchNorm2d(num_features=use_channels)
         self.relu5b = nn.ReLU()
 
+        # residual block #6
+        self.conv_layer6a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm6a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu6a = nn.ReLU()
+        self.conv_layer6b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm6b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu6b = nn.ReLU()
+        
+        # residual block #7
+        self.conv_layer7a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm7a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu7a = nn.ReLU()
+        self.conv_layer7b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm7b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu7b = nn.ReLU()
+        
+        # residual block #8
+        self.conv_layer8a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm8a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu8a = nn.ReLU()
+        self.conv_layer8b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm8b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu8b = nn.ReLU()
+        
+        # residual block #9
+        self.conv_layer9a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm9a = nn.BatchNorm2d(num_features=use_channels)
+        self.relu9a = nn.ReLU()
+        self.conv_layer9b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
+        self.batch_norm9b = nn.BatchNorm2d(num_features=use_channels)
+        self.relu9b = nn.ReLU()
+
         # value output
         self.conv_layerV1 = nn.Conv2d(in_channels=use_channels, out_channels=value_channels, kernel_size=1, stride=1, padding=0)
         self.batch_normV1 = nn.BatchNorm2d(value_channels)
@@ -132,10 +160,6 @@ class CustomCNN(nn.Module):
         common = self.batch_norm0(common)
         common = self.relu0(common)
 
-        # old block
-        #common = self.conv_layer2(common)
-        #common = self.batch_norm2(common)
-        #common = self.relu2(common)
 
         # residual block #1
         orig_common = common
@@ -186,6 +210,46 @@ class CustomCNN(nn.Module):
         common = self.batch_norm5b(common)
         common += orig_common
         common = self.relu5b(common)
+        
+        # residual block #6
+        orig_common = common
+        common = self.conv_layer6a(common)
+        common = self.batch_norm6a(common)
+        common = self.relu6a(common)
+        common = self.conv_layer6b(common)
+        common = self.batch_norm6b(common)
+        common += orig_common
+        common = self.relu6b(common)
+        
+        # residual block #7
+        orig_common = common
+        common = self.conv_layer7a(common)
+        common = self.batch_norm7a(common)
+        common = self.relu7a(common)
+        common = self.conv_layer7b(common)
+        common = self.batch_norm7b(common)
+        common += orig_common
+        common = self.relu7b(common)
+        
+        # residual block #8
+        orig_common = common
+        common = self.conv_layer8a(common)
+        common = self.batch_norm8a(common)
+        common = self.relu8a(common)
+        common = self.conv_layer8b(common)
+        common = self.batch_norm8b(common)
+        common += orig_common
+        common = self.relu8b(common)
+        
+        # residual block #9
+        orig_common = common
+        common = self.conv_layer9a(common)
+        common = self.batch_norm9a(common)
+        common = self.relu9a(common)
+        common = self.conv_layer9b(common)
+        common = self.batch_norm9b(common)
+        common += orig_common
+        common = self.relu9b(common)
 
 
         # value output
