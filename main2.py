@@ -117,6 +117,7 @@ def randomVSmodel(board, model):
 
     return board.blackWin()
 
+# TODO: exploit=False here for model evaluluation?
 def modelVSmodel(board, model1, model2):
     while True:
 
@@ -165,10 +166,8 @@ def main():
     device = torch.device("cpu")  # do not use GPU with multiprocessing
     torch.set_num_threads(mp.cpu_count())
     CNN = CustomCNN(board_size).to(device)
-    #CNN = torch.load('models/model-1671493859.pt').to(device)
+    #CNN = torch.load('models_saved/4x4_1.pt').to(device)
     optimizer = optim.SGD(CNN.parameters(), lr=learning_rate, momentum=momentum)
-
-    #mcts = MCTS(model=CNN, c=mcts_c) # TODO: create new in each loop?
 
 
     CNN_current = copy.deepcopy(CNN)
@@ -234,7 +233,7 @@ def main():
 
     # CNN vs random
     """
-    CNN1 = torch.load('models/model-1671527638.pt').to(device)
+    CNN1 = torch.load('models_saved/4x4_1.pt').to(device)
     CNN2 = torch.load('models/4x4_3.pt').to(device)
     player1 = 0
     player2 = 0
@@ -246,7 +245,7 @@ def main():
 
         myboard.reset()
         #if randomVSmodel(myboard, CNN1):
-        if modelVSmodel(myboard, CNN2, CNN1):
+        if not modelVSmodel(myboard, CNN2, CNN1):
             player2 += 1
 
         myboard.reset()
