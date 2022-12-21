@@ -255,8 +255,7 @@ class CustomCNN(nn.Module):
         # value output
         value = self.conv_layerV1(common)
         value = self.batch_normV1(value)
-        #value = self.reluV1(value)
-        # value = torch.flatten(value)
+        value = self.reluV1(value)
         value = value.reshape(value.size(0), -1)
         value = self.fcV1(value)
         value = self.reluV2(value)
@@ -268,7 +267,6 @@ class CustomCNN(nn.Module):
         policy = self.conv_layerP1(common)
         policy = self.batch_normP1(policy)
         policy = self.reluP1(policy)
-        # policy = torch.flatten(policy)
         policy = policy.reshape(policy.size(0), -1)
         policy = self.fcP1(policy)
         policy = self.softmaxP1(policy)  # nn.LogSoftmax() might be more performant
