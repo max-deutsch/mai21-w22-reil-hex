@@ -159,8 +159,9 @@ def main():
     learning_rate = 0.01  # TODO: make schedule dependent. Decrease by factor after each few hundred steps?
     momentum = 0.9
 
-    # number of games to determine new champion
+    # number of games to determine new champion + acceptance win rate
     eval_games = 200
+    accept_wr = 0.55
 
 
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -235,7 +236,7 @@ def main():
         print("Win rate as black: " + str(black_wr))
         print("Total win rate: " + str(tot_wr))
 
-        if tot_wr > 0.55:
+        if tot_wr > accept_wr:
             # save old champion with timestamp when it was surpassed
             ts = str(int(time.time()))
             model_name = 'champ-' + ts + '.pt'
