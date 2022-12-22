@@ -169,6 +169,7 @@ def main():
     torch.set_num_threads(mp.cpu_count())
 
     if new_model:
+        assert not os.path.isfile('models/champion.pt')
         CNN = CustomCNN(board_size).to(device)
         torch.save(CNN, 'models/champion.pt')
         iteration_history = []
@@ -190,7 +191,7 @@ def main():
         mcts_iterations = []
         pool = mp.Pool(mp.cpu_count())
         game_time = time.time()
-        for i in range(num_parallel_games):
+        for parallel in range(num_parallel_games):
             pool.apply_async(game_to_pool, args=(CNN, board_size, num_mcts_iterations, device, max_mcts_time, mcts_c),
                              callback=collect_game_results)
         pool.close()
@@ -202,7 +203,7 @@ def main():
         epochs = 0
         # learn for train_max_count
         train_time = time.time()
-        for i in range(train_epochs):
+        for epoch in range(train_epochs):
             epochs += 1
             train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
             loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)
