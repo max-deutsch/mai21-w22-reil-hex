@@ -1,121 +1,17 @@
 import hex_engine as hex
-import math
-import copy
+
 import numpy as np
 from CNN import CustomCNN, CustomDataset, trainCNN, getActionCNN
-from CNN import evalCNN
-from MonteCarloTreeSearch import MCTS
 import torch
 from torch import optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import time
-import multiprocessing as mp
 import os
 import matplotlib.pyplot as plt
+import subprocess
 
+import config
 
-# function to feed to mp.pool: run MCTS
-def mcts_to_pool(mcts, game_state, num_mcts_iterations, device, maxTime):
-    try:
-        # Peter: 1s of maxTime is about 100 iterations
-        num_iterations, mcts_result = mcts.run(
-            game_state=game_state,
-            max_num_iterations=num_mcts_iterations,
-            device=device,
-            max_seconds=maxTime)  # 0.1/num_parallel_mcts)
-        return num_iterations, game_state.board, mcts_result
-    except:
-        return None
-
-    return None
-
-
-# callback function to collect all results from async. mutliprocessing pool
-def collect_mcts_results(result):
-    global mcts_boards, mcts_values, mcts_policies, mcts_iterations
-    if mcts_values is not None:
-        num_iterations, board, mcts_result = result
-        mcts_iterations.append(num_iterations)  # figure out, how many iterations per time
-        mcts_boards.append(np.asarray(board))
-        mcts_values.append(mcts_result['value'])
-        mcts_policies.append(mcts_result['policy'])
-
-
-def game_to_pool(CNN, board_size, num_mcts_iterations, device, maxTime, mcts_c):
-    try:
-        game_state = hex.hexPosition(board_size)
-        mcts = MCTS(model=CNN, c=mcts_c)
-        tmp_mcts_iterations = []
-        tmp_mcts_boards = []
-        tmp_mcts_values = []
-        tmp_mcts_values_override = []
-        tmp_mcts_policies = []
-        # play a whole game until the end
-        while True:
-
-            num_iterations, mcts_result = mcts.run(game_state=game_state, max_num_iterations=num_mcts_iterations,
-                                                   device=device, max_seconds=maxTime)  # 0.1/num_parallel_mcts)
-            # TODO: sometimes append twice, sometimes not at all?
-            tmp_mcts_boards.append(mcts_result['board'])
-            tmp_mcts_values.append(mcts_result['value'])
-            tmp_mcts_values_override.append(mcts_result['value'])
-            tmp_mcts_policies.append(mcts_result['policy'])
-            tmp_mcts_iterations.append(num_iterations)
-            action = getActionCNN(CNN=CNN, game_state=game_state, device=device, board_size=board_size, exploit=False)
-            game_state.board[action[0]][action[1]] = 1  # take action, always play as player 1 (white)
-            game_state.board = game_state.recodeBlackAsWhite(printBoard=False)
-            if game_state.whiteWin() or game_state.blackWin():
-                break
-        # override reward values
-        #reward = -1
-        #for i in reversed(range(len(tmp_mcts_values_override))):
-        #    tmp_mcts_values_override[i] = reward
-        #    reward *= -1
-
-        return tmp_mcts_iterations, tmp_mcts_boards, tmp_mcts_values, tmp_mcts_policies
-    except:
-        return None
-
-    return None
-
-def collect_game_results(result):
-    global mcts_boards, mcts_values, mcts_policies, mcts_iterations, mcts_values2
-    if result is not None:
-        tmp_mcts_iterations, tmp_mcts_boards, tmp_mcts_values, tmp_mcts_policies = result
-        mcts_boards += tmp_mcts_boards
-        mcts_values += tmp_mcts_values
-        mcts_policies += tmp_mcts_policies
-        mcts_iterations += tmp_mcts_iterations
-
-
-def modelVSrandom(board, model):
-    while True:
-        action = getActionCNN(model, board, "cpu", board.size, exploit=True)
-        board.board[action[0]][action[1]] = 1
-        if board.whiteWin():
-            break
-
-        board.playRandom(player=2)
-        if board.blackWin():
-            break
-
-    return board.whiteWin()
-
-
-def randomVSmodel(board, model):
-    while True:
-        board.playRandom(player=1)
-        if board.whiteWin():
-            break
-
-        board.board = board.recodeBlackAsWhite(printBoard=False)
-        action = getActionCNN(model, board, "cpu", board.size, exploit=True)
-        board.board[action[0]][action[1]] = 1
-        board.board = board.recodeBlackAsWhite(printBoard=False)
-        if board.blackWin():
-            break
-
-    return board.blackWin()
 
 # DO: exploit=False here for model evaluluation? yes!
 def modelVSmodel(board, model1, model2):
@@ -138,39 +34,16 @@ def modelVSmodel(board, model1, model2):
 
 
 def main():
+
     if not os.path.isdir("models"): os.makedirs("models")
-
-    global mcts_boards, mcts_values, mcts_policies, mcts_iterations
-
-    new_model = True
-
-    board_size = 4  # equals n x n board size
-
-    num_parallel_games = 96
-    batch_size = int(num_parallel_games / 4)  # does not have to be
-
-    # MCTS parameter
-    mcts_c = math.sqrt(2)
-    max_mcts_time = 20
-    num_mcts_iterations = 500
-
-    # learning condition
-    train_epochs = 10
-    learning_rate = 0.01  # TODO: make schedule dependent. Decrease by factor after each few hundred steps?
-    momentum = 0.9
-
-    # number of games to determine new champion + acceptance win rate
-    eval_games = 200
-    accept_wr = 0.55
-
+    if not os.path.isdir("tmp_data"): os.makedirs("tmp_data")
 
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = torch.device("cpu")  # do not use GPU with multiprocessing
-    torch.set_num_threads(mp.cpu_count())
 
-    if new_model:
+    if config.new_model:
         assert not os.path.isfile('models/champion.pt')
-        CNN = CustomCNN(board_size).to(device)
+        CNN = CustomCNN(config.board_size).to(device)
         torch.save(CNN, 'models/champion.pt')
         iteration_history = []
         iteration_history.append(1.0)
@@ -178,47 +51,74 @@ def main():
         CNN = torch.load('models/champion.pt').to(device)
         iteration_history = np.loadtxt('models/iterations.txt').tolist()
 
-    optimizer = optim.SGD(CNN.parameters(), lr=learning_rate, momentum=momentum)
+    optimizer = optim.SGD(CNN.parameters(), lr=config.learning_rate, momentum=config.momentum)
 
     # count how many iterations the last champ lies in the past
     i_since_last_champ = 0
-    for i in range(1000):
+    for i in range(config.max_iterations):
         i_since_last_champ += 1
         print('Iterations since last champion: ' + str(i_since_last_champ))
+
+        # clear game data
+        for file in os.listdir('tmp_data/'):
+            os.remove('tmp_data/' + file)
+        game_time = time.time()
+
+        subprocess.Popen(['sbatch', '-a', f'1-{config.num_parallel_workers}', 'run_worker.sh']).wait()
+
+        time.sleep(3)
+
+
+        while subprocess.check_output(['squeue', '-n', 'worker-hex-camp']).decode('utf-8').find('worker') != -1:
+            time.sleep(1.0)
+
+
+
         mcts_boards = []
         mcts_values = []
         mcts_policies = []
-        mcts_iterations = []
-        pool = mp.Pool(mp.cpu_count())
-        game_time = time.time()
-        for parallel in range(num_parallel_games):
-            pool.apply_async(game_to_pool, args=(CNN, board_size, num_mcts_iterations, device, max_mcts_time, mcts_c),
-                             callback=collect_game_results)
-        pool.close()
-        pool.join()
-        print("Time for " + str(num_parallel_games) + " games: " + str(time.time() - game_time) + "s" )
-        mcts_boards = np.asarray(mcts_boards)
-        mcts_values = np.asarray(mcts_values)
-        mcts_policies = np.asarray(mcts_policies)
-        epochs = 0
+
+        errors=0
+        for parallel in range(config.num_parallel_workers):
+            worker_i = parallel+1
+            for i_game in range(config.num_worker_games):
+                if os.path.isfile('tmp_data/' + str(worker_i) + "_" + str(i_game) + '_error.txt'):
+                    errors+=1
+                    print("Error in worker " + str(worker_i) + " , game " + str(i_game))
+                else:
+                    board = np.loadtxt('tmp_data/' + str(worker_i) + "_" + str(i_game) + '_board.txt')
+                    board = board.reshape(board.shape[0], board.shape[1] // config.board_size, config.board_size)
+                    value = np.loadtxt('tmp_data/' + str(worker_i) + "_" + str(i_game) + '_value.txt', dtype=float)
+                    policy = np.loadtxt('tmp_data/' + str(worker_i) + "_" + str(i_game) + '_policy.txt', dtype=float)
+                    mcts_boards += board.tolist()
+                    mcts_values += value.tolist()
+                    mcts_policies += policy.tolist()
+
+        mcts_boards = np.asarray(mcts_boards, dtype=float)
+        mcts_values = np.asarray(mcts_values, dtype=float)
+        mcts_policies = np.asarray(mcts_policies, dtype=float)
+
+        num_all_games = config.num_parallel_workers*config.num_worker_games
+        print("Time for " + str(num_all_games) + " games: " + str(time.time() - game_time) + "s")
+        print("--- thereof errors: " + str(errors))
+
         # learn for train_max_count
         train_time = time.time()
-        for epoch in range(train_epochs):
-            epochs += 1
+        for epoch in range(config.train_epochs):
             train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
-            loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False)
+            loader = DataLoader(train_set, batch_size=config.batch_size, shuffle=True, num_workers=2, pin_memory=False)
             CNN.train()
             train_loss = trainCNN(CNN, loader, optimizer, device)
             #print("-Epoch " + str(i) + ": loss= " + str(train_loss))
 
-        print("Time for " + str(epochs) + " epochs of training: " + str(time.time() - train_time) + "s")
+        print("Time for " + str(config.train_epochs) + " epochs of training: " + str(time.time() - train_time) + "s")
 
-
+        play_time = time.time()
         CNN_champ = torch.load('models/champion.pt').to(device)
-        evalboard = hex.hexPosition(size=board_size)
+        evalboard = hex.hexPosition(size=config.board_size)
         player1 = 0
         player2 = 0
-        for j in range(eval_games):
+        for j in range(config.eval_games):
 
             if modelVSmodel(evalboard, CNN, CNN_champ):
                 player1 += 1
@@ -230,14 +130,15 @@ def main():
 
             evalboard.reset()
 
-        white_wr = player1 / eval_games
-        black_wr = player2 / eval_games
+        white_wr = player1 / config.eval_games
+        black_wr = player2 / config.eval_games
         tot_wr = (white_wr + black_wr) / 2
         print("Win rate as white: " + str(white_wr))
         print("Win rate as black: " + str(black_wr))
         print("Total win rate: " + str(tot_wr))
+        print("Time for " + str(config.eval_games) + " games of evaluation: " + str(time.time() - play_time) + "s")
 
-        if tot_wr > accept_wr:
+        if tot_wr > config.accept_wr:
             # save old champion with timestamp when it was surpassed
             ts = str(int(time.time()))
             model_name = 'champ-' + ts + '.pt'
@@ -257,35 +158,6 @@ def main():
             plt.savefig('models/plot.png')
             plt.close()
 
-
-
-    # #play against CNN
-    #myboard = hex.hexPosition(size=board_size)
-    #myboard.humanVersusMachine()
-
-    # CNN vs random
-    """
-    CNN1 = torch.load('models/model-1671614752.pt').to(device)
-    CNN2 = torch.load('models/model-1671613547.pt').to(device)
-    #CNN2 = torch.load('models/alex/model-1671636389.pt').to(device)
-    player1 = 0
-    player2 = 0
-    runs = 4
-    for i in range(runs):
-        #if modelVSrandom(myboard, CNN1):
-        if modelVSmodel(myboard, CNN1, CNN2):
-            player1 += 1
-
-        myboard.reset()
-        #if randomVSmodel(myboard, CNN1):
-        if not modelVSmodel(myboard, CNN2, CNN1):
-            player2 += 1
-
-        myboard.reset()
-    print("Win rate as white: " + str(player1 / runs))
-    print("Win rate as black: " + str(player2 / runs))
-    print("Total win rate: " + str((player1+player2)/(2*runs)))
-    """
 
 if __name__ == "__main__":
     main()
