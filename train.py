@@ -62,12 +62,13 @@ def main():
         # clear game data
         for file in os.listdir('tmp_data/'):
             os.remove('tmp_data/' + file)
+
         game_time = time.time()
+        torch.save(CNN, 'models/current.pt')  # save model to be loaded from worker
 
         subprocess.Popen(['sbatch', '-a', f'1-{config.num_parallel_workers}', 'run_worker.sh']).wait()
 
-        time.sleep(3)
-
+        time.sleep(10)
 
         while subprocess.check_output(['squeue', '-n', 'worker-hex-camp']).decode('utf-8').find('worker') != -1:
             time.sleep(1.0)
@@ -109,6 +110,7 @@ def main():
             loader = DataLoader(train_set, batch_size=config.batch_size, shuffle=True, num_workers=2, pin_memory=False)
             CNN.train()
             trainCNN(CNN, loader, optimizer, device)
+            print("- epoch " + str(epoch+1) + " : " + str(time.time() - train_time) + "s")
 
         print("Time for " + str(config.train_epochs) + " epochs of training: " + str(time.time() - train_time) + "s")
 
