@@ -104,7 +104,7 @@ class CustomCNN(nn.Module):
         self.conv_layer5b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
         self.batch_norm5b = nn.BatchNorm2d(num_features=use_channels)
         self.relu5b = nn.ReLU()
-        """
+
         # residual block #6
         self.conv_layer6a = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
         self.batch_norm6a = nn.BatchNorm2d(num_features=use_channels)
@@ -136,7 +136,7 @@ class CustomCNN(nn.Module):
         self.conv_layer9b = nn.Conv2d(in_channels=use_channels, out_channels=use_channels, kernel_size=3, stride=1, padding=1)
         self.batch_norm9b = nn.BatchNorm2d(num_features=use_channels)
         self.relu9b = nn.ReLU()
-        """
+
         # value output
         self.conv_layerV1 = nn.Conv2d(in_channels=use_channels, out_channels=value_channels, kernel_size=1, stride=1, padding=0)
         self.batch_normV1 = nn.BatchNorm2d(value_channels)
@@ -210,7 +210,7 @@ class CustomCNN(nn.Module):
         common = self.batch_norm5b(common)
         common += orig_common
         common = self.relu5b(common)
-        """
+
         # residual block #6
         orig_common = common
         common = self.conv_layer6a(common)
@@ -250,7 +250,7 @@ class CustomCNN(nn.Module):
         common = self.batch_norm9b(common)
         common += orig_common
         common = self.relu9b(common)
-        """
+
 
         # value output
         value = self.conv_layerV1(common)
@@ -295,7 +295,6 @@ def trainCNN(CNN, loader, optimizer, device):
             optimizer.step()
             train_loss = train_loss + ((1 / (batch_idx + 1)) * (loss.data - train_loss))
 
-    return train_loss.detach().numpy()
 
 
 def evalCNN(CNN,game_state,device):

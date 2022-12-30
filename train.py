@@ -14,16 +14,16 @@ import config
 
 
 # DO: exploit=False here for model evaluluation? yes!
-def modelVSmodel(board, model1, model2):
+def modelVSmodel(board, model1, model2, device):
     while True:
 
-        action = getActionCNN(model1, board, "cpu", board.size, exploit=False)
+        action = getActionCNN(model1, board, device, board.size, exploit=False)
         board.board[action[0]][action[1]] = 1
         if board.whiteWin():
             break
 
         board.board = board.recodeBlackAsWhite(printBoard=False)
-        action = getActionCNN(model2, board, "cpu", board.size, exploit=False)
+        action = getActionCNN(model2, board, device, board.size, exploit=False)
         board.board[action[0]][action[1]] = 1
         board.board = board.recodeBlackAsWhite(printBoard=False)
         if board.blackWin():
@@ -38,8 +38,8 @@ def main():
     if not os.path.isdir("models"): os.makedirs("models")
     if not os.path.isdir("tmp_data"): os.makedirs("tmp_data")
 
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")  # do not use GPU with multiprocessing
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cpu")  # do not use GPU with multiprocessing
 
     if config.new_model:
         assert not os.path.isfile('models/champion.pt')
@@ -108,8 +108,7 @@ def main():
             train_set = CustomDataset(mcts_boards, mcts_values, mcts_policies)
             loader = DataLoader(train_set, batch_size=config.batch_size, shuffle=True, num_workers=2, pin_memory=False)
             CNN.train()
-            train_loss = trainCNN(CNN, loader, optimizer, device)
-            #print("-Epoch " + str(i) + ": loss= " + str(train_loss))
+            trainCNN(CNN, loader, optimizer, device)
 
         print("Time for " + str(config.train_epochs) + " epochs of training: " + str(time.time() - train_time) + "s")
 
@@ -120,12 +119,12 @@ def main():
         player2 = 0
         for j in range(config.eval_games):
 
-            if modelVSmodel(evalboard, CNN, CNN_champ):
+            if modelVSmodel(evalboard, CNN, CNN_champ, device):
                 player1 += 1
 
             evalboard.reset()
 
-            if not modelVSmodel(evalboard, CNN_champ, CNN):
+            if not modelVSmodel(evalboard, CNN_champ, CNN, device):
                 player2 += 1
 
             evalboard.reset()
@@ -138,7 +137,7 @@ def main():
         print("Total win rate: " + str(tot_wr))
         print("Time for " + str(config.eval_games) + " games of evaluation: " + str(time.time() - play_time) + "s")
 
-        if tot_wr > config.accept_wr:
+        if tot_wr >= config.accept_wr:
             # save old champion with timestamp when it was surpassed
             ts = str(int(time.time()))
             model_name = 'champ-' + ts + '.pt'

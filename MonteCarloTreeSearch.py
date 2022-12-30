@@ -133,7 +133,8 @@ class MCTS:
             return None
 
         values= np.array(values).astype(np.float)
-        probs = np.exp(values) / np.sum(np.exp(values), axis=0)  # softmax of values
+        values = np.exp(values - np.max(values))
+        probs = values / np.sum(values, axis=0)  # softmax of values
         action_i = np.random.choice(range(len(actions)), 1, p=probs)[0]
 
         return actions[action_i]
