@@ -48,7 +48,7 @@ def main():
         iteration_history = []
         iteration_history.append(1.0)
     else:
-        CNN = torch.load('models/champion.pt').to(device)
+        CNN = torch.load('models/current.pt').to(device)
         iteration_history = np.loadtxt('models/iterations.txt').tolist()
 
     optimizer = optim.SGD(CNN.parameters(), lr=config.learning_rate, momentum=config.momentum)
