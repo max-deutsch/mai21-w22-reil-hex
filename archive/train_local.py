@@ -118,16 +118,16 @@ def randomVSmodel(board, model):
     return board.blackWin()
 
 # DO: exploit=False here for model evaluluation? yes!
-def modelVSmodel(board, model1, model2):
+def modelVSmodel(board, model1, model2, exploit=False):
     while True:
 
-        action = getActionCNN(model1, board, "cpu", board.size, exploit=False)
+        action = getActionCNN(model1, board, "cpu", board.size, exploit=exploit)
         board.board[action[0]][action[1]] = 1
         if board.whiteWin():
             break
 
         board.board = board.recodeBlackAsWhite(printBoard=False)
-        action = getActionCNN(model2, board, "cpu", board.size, exploit=False)
+        action = getActionCNN(model2, board, "cpu", board.size, exploit=exploit)
         board.board[action[0]][action[1]] = 1
         board.board = board.recodeBlackAsWhite(printBoard=False)
         if board.blackWin():
@@ -142,17 +142,17 @@ def main():
 
     global mcts_boards, mcts_values, mcts_policies, mcts_iterations
 
-    new_model = True
+    new_model = False
 
-    board_size = 4  # equals n x n board size
+    board_size = 7  # equals n x n board size
 
-    num_parallel_games = 96
+    num_parallel_games = 1
     batch_size = int(num_parallel_games / 4)  # does not have to be
 
     # MCTS parameter
     mcts_c = math.sqrt(2)
     max_mcts_time = 20
-    num_mcts_iterations = 500
+    num_mcts_iterations = 1000
 
     # learning condition
     train_epochs = 10
@@ -182,7 +182,7 @@ def main():
 
     # count how many iterations the last champ lies in the past
     i_since_last_champ = 0
-    for i in range(1000):
+    for i in range(0):
         i_since_last_champ += 1
         print('Iterations since last champion: ' + str(i_since_last_champ))
         mcts_boards = []
@@ -197,6 +197,7 @@ def main():
         pool.close()
         pool.join()
         print("Time for " + str(num_parallel_games) + " games: " + str(time.time() - game_time) + "s" )
+
         mcts_boards = np.asarray(mcts_boards)
         mcts_values = np.asarray(mcts_values)
         mcts_policies = np.asarray(mcts_policies)
@@ -260,32 +261,36 @@ def main():
 
 
     # #play against CNN
-    #myboard = hex.hexPosition(size=board_size)
-    #myboard.humanVersusMachine()
+
 
     # CNN vs random
-    """
-    CNN1 = torch.load('models/model-1671614752.pt').to(device)
-    CNN2 = torch.load('models/model-1671613547.pt').to(device)
-    #CNN2 = torch.load('models/alex/model-1671636389.pt').to(device)
+    ""
+    myboard = hex.hexPosition(size=board_size)
+    myboard.humanVersusMachine()
+    exit()
+
+    #"""
+    CNN1 = torch.load('models_saved/champion.pt').to(device)
+    CNN2 = torch.load('models_saved/champion4.pt').to(device)
+
     player1 = 0
     player2 = 0
-    runs = 4
+    runs = 100
     for i in range(runs):
         #if modelVSrandom(myboard, CNN1):
-        if modelVSmodel(myboard, CNN1, CNN2):
+        if modelVSmodel(myboard, CNN1, CNN2, False):  # True is exploit
             player1 += 1
 
         myboard.reset()
         #if randomVSmodel(myboard, CNN1):
-        if not modelVSmodel(myboard, CNN2, CNN1):
+        if not modelVSmodel(myboard, CNN2, CNN1, False):
             player2 += 1
 
         myboard.reset()
     print("Win rate as white: " + str(player1 / runs))
     print("Win rate as black: " + str(player2 / runs))
     print("Total win rate: " + str((player1+player2)/(2*runs)))
-    """
+    #"""
 
 if __name__ == "__main__":
     main()
