@@ -86,5 +86,6 @@ if __name__ == "__main__":
     player1 = hexCAMP()
     player2 = hexCAMP()
     game = hex.hexPosition(7)
-    #game.humanVersusMachine(machine=lambda board: player.play(board, 2))
-    print(modelVSmodel(game,player1,player2))
+    human_player = 2
+    game.humanVersusMachine(human_player,machine=lambda board: player1.play(board, 2 if human_player == 1 else 1))
+    #print(modelVSmodel(game,player1,player2))

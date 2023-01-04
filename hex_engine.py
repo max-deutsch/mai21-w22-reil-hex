@@ -199,10 +199,10 @@ class hexPosition(object):
         """
 
         if machine == None:
-            def machine():
+            def machine(board):
                 import torch
                 from CNN import getActionCNN
-                CNN = torch.load('models_saved/4x4_1.pt').cpu()
+                CNN = torch.load('models_saved/champion.pt').cpu()
                 self.board = self.recodeBlackAsWhite(printBoard=False)
                 action = getActionCNN(CNN, self, "cpu", self.size, exploit=True)
                 self.board = self.recodeBlackAsWhite(printBoard=False)
@@ -245,34 +245,46 @@ class hexPosition(object):
 
             return (number_translated, letter_translated)
 
+        player=1
         while self.winner == 0:
 
-            self.printBoard()
+            if player == human_player:
 
-            possible_actions = self.getActionSpace()
+                self.printBoard()
 
-            human_input = (27, 27)
+                possible_actions = self.getActionSpace()
 
-            while human_input not in possible_actions:
-                human_input = translator(input("Enter your moove (e.g. 'A1'): "))
+                human_input = (27, 27)
 
-            self.board[human_input[0]][human_input[1]] = 1
+                while human_input not in possible_actions:
+                    human_input = translator(input("Enter your moove (e.g. 'A1'): "))
+
+                self.board[human_input[0]][human_input[1]] = human_player
+
+
+
+                player = 2 if human_player == 1 else 1
+
+            else:
+                #blacks_moove = machine()
+                ai_moove = machine(self)
+                self.board[ai_moove[0]][ai_moove[1]] = 2 if human_player == 1 else 1
+
+                player = 1 if human_player == 1 else 2
+
 
             self.whiteWin()
+            self.blackWin()
 
-            if self.winner == 1:
+            if self.winner == human_player:
                 self.printBoard()
-                print("The human player (White) has won!")
+                print("The human player has won!")
                 self.whiteWin(verbose=True)
-            else:
-                blacks_moove = machine()
-                self.board[blacks_moove[0]][blacks_moove[1]] = 2
 
-                self.blackWin()
-                if self.winner == 2:
-                    self.printBoard()
-                    print("The computer (Black) has won!")
-                    self.blackWin(verbose=True)
+            elif self.winner != 0:
+                self.printBoard()
+                print("The computer has won!")
+                self.blackWin(verbose=True)
 
     def recodeBlackAsWhite(self, printBoard=False, invert_colors=True):
         """
