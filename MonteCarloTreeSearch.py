@@ -24,7 +24,7 @@ class MCTS:
     def run(self, game_state: hex.hexPosition, max_num_iterations, device, max_seconds=1):
         root_node = Node(parent=None)
         end_time = time.time() + max_seconds
-        for i in range(max_num_iterations):  # todo: use time
+        for i in range(max_num_iterations):
             num_iterations = i
             self.loop(root_node, game_state, device)
             if max_seconds > 0 and time.time() >= end_time:
