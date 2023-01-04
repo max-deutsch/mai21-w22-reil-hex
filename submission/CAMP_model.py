@@ -46,7 +46,11 @@ class hexCAMP():
     def __init__(self):
 
         self.size = 7
-        self.CNN = torch.load('champion.pt').cpu()
+
+        if torch.cuda.is_available():
+            self.CNN = torch.load('champion.pt').cpu()
+        else:
+            self.CNN = torch.load('champion.pt', map_location=torch.device('cpu'))
 
     def play(self, game, player):
 
