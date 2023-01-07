@@ -54,7 +54,7 @@ class hexCAMP():
         else:
             self.CNN = torch.load(model_path, map_location=torch.device('cpu'))
 
-    def play(self, game, player, override=False):
+    def play(self, game, player, override=True):
 
         if override:
             for action in game.getActionSpace():
@@ -62,6 +62,10 @@ class hexCAMP():
                 game_copy.board[action[0]][action[1]] = player
                 if game_copy.whiteWin() or game_copy.blackWin():
                     return action
+                game_copy.board[action[0]][action[1]] = 2 if player == 1 else 1
+                if game_copy.whiteWin() or game_copy.blackWin():
+                    return action
+
 
         if player == 2: # TODO: this should be 1, but works better
             action = getActionCNN(self.CNN, game, "cpu", self.size, exploit=True)
