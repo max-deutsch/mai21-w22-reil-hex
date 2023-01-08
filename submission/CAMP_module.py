@@ -13,7 +13,7 @@ def evalCNN(CNN,game_state,device):
     board_array = torch.from_numpy(board_array).unsqueeze(0).float().to(device)
     with torch.no_grad():
         determine_results = CNN(board_array)
-    CNN.train()  # switches training back on
+    #CNN.train()  # switches training back on
     return determine_results
 
 def getActionCNN(CNN, game_state,device,board_size,exploit=True):
@@ -55,7 +55,6 @@ class hexCAMP():
             self.CNN = torch.load(model_path, map_location=torch.device('cpu'))
 
     def play(self, game, player, override=True):
-
         if override:
             for action in game.getActionSpace():
                 game_copy = copy.deepcopy(game)
@@ -79,18 +78,15 @@ class hexCAMP():
         return action
     
 
-
-
-
 def modelVSmodel(board, player1, player2):
     while True:
 
-        action = player1.play(game=board, player=1, override=False)
+        action = player1.play(game=board, player=1)
         board.board[action[0]][action[1]] = 1
         if board.whiteWin():
             break
 
-        action = player2.play(game=board, player=2, override=False)
+        action = player2.play(game=board, player=2)
         board.board[action[0]][action[1]] = 2
         if board.blackWin():
             break
@@ -101,7 +97,7 @@ def modelVSmodel(board, player1, player2):
 
 def modelVSrandom(board, player):
     while True:
-        action = player.play(game=board, player=1, override=False)
+        action = player.play(game=board, player=1)
         board.board[action[0]][action[1]] = 1
         if board.whiteWin():
             break
@@ -120,38 +116,40 @@ def randomVSmodel(board, player):
             break
 
 
-        action = player.play(game=board, player=2, override=False)
+        action = player.play(game=board, player=2)
         board.board[action[0]][action[1]] = 2
         if board.blackWin():
             break
 
     return board.blackWin()
 
-if __name__ == "__main__":
+def randomVSrandom(board):
+    while True:
+        board.playRandom(player=1)
+        if board.whiteWin():
+            break
 
-    player1 = hexCAMP('champion.pt')
-    player2 = hexCAMP('champion.pt')
+        board.playRandom(player=2)
+        if board.blackWin():
+            break
+
+    return board.whiteWin()
+
+def evalVSrandom(player, runs):
+
     game = hex.hexPosition(7)
-    human_player = 2
-    game.humanVersusMachine(human_player,machine=lambda board: player1.play(board, 2 if human_player == 1 else 1))
-
-    """
-    myboard = hex.hexPosition(7)
-    runs = 100
     white = 0
     black = 0
     for i in range(runs):
-        if modelVSrandom(myboard, player1):
-        #if modelVSmodel(myboard, player1, player2):  # True is exploit
+        if modelVSrandom(game, player):
             white += 1
 
-        myboard.reset()
-        if randomVSmodel(myboard, player1):
-        #if not modelVSmodel(myboard, player2, player1):
+        game.reset()
+        if randomVSmodel(game, player):
             black += 1
 
-        myboard.reset()
+        game.reset()
     print("Win rate as white: " + str(white / runs))
     print("Win rate as black: " + str(black / runs))
     print("Total win rate: " + str((white + black) / (2 * runs)))
-    """
+
