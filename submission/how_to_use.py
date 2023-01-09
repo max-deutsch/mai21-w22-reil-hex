@@ -1,5 +1,5 @@
 import hex_engine as hex
-from CAMP_module import agent
+from submitted_module import agent
 
 if __name__ == "__main__":
 
