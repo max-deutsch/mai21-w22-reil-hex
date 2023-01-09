@@ -54,7 +54,10 @@ class hexCAMP():
         else:
             self.CNN = torch.load(model_path, map_location=torch.device('cpu'))
 
-    def play(self, game, player, override=True):
+    def play(self, game, override=True):
+
+        player = self.getPlayer(game)
+
         if override:
             for action in game.getActionSpace():
                 game_copy = copy.deepcopy(game)
@@ -76,6 +79,11 @@ class hexCAMP():
             action = game.recodeCoordinates(action)
 
         return action
+
+    def getPlayer(self,game):
+        turn = self.size * self.size - len(game.getActionSpace())
+        return 1 if turn % 2 == 0 else 2
+
     
 
 def modelVSmodel(board, player1, player2):
@@ -97,7 +105,7 @@ def modelVSmodel(board, player1, player2):
 
 def modelVSrandom(board, player):
     while True:
-        action = player.play(game=board, player=1)
+        action = player.play(game=board)
         board.board[action[0]][action[1]] = 1
         if board.whiteWin():
             break
@@ -116,7 +124,7 @@ def randomVSmodel(board, player):
             break
 
 
-        action = player.play(game=board, player=2)
+        action = player.play(game=board)
         board.board[action[0]][action[1]] = 2
         if board.blackWin():
             break
@@ -153,3 +161,10 @@ def evalVSrandom(player, runs):
     print("Win rate as black: " + str(black / runs))
     print("Total win rate: " + str((white + black) / (2 * runs)))
 
+
+def agent(game):
+    player = hexCAMP('CAMP_model.pt')
+    return player.play(game=game)
+
+#player = hexCAMP('CAMP_model.pt')
+#evalVSrandom(player,100)
